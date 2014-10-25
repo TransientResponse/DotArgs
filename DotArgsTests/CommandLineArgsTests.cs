@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NetArgs;
+using DotArgs;
 
-namespace NetArgsTests
+namespace DotArgsTest
 {
 	[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 	[TestClass]
@@ -13,36 +13,36 @@ namespace NetArgsTests
 		public void AliasTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
-			args.AddFlag( "flag" );
-			args.AddAlias( "flag", "alias" );
+			args.RegisterArgument( "flag", new FlagArgument(false) );
+			args.RegisterAlias( "flag", "alias" );
 
 			Assert.IsTrue( args.Process( string.Empty ) );
-			Assert.IsFalse( args.GetFlag( "alias" ) );
+			Assert.IsFalse( args.GetValue<bool>( "alias" ) );
 
 			Assert.IsTrue( args.Process( "-alias" ) );
-			Assert.IsTrue( args.GetFlag( "alias" ) );
+			Assert.IsTrue( args.GetValue<bool>( "alias" ) );
 
-			ExceptionAssert.Assert<KeyNotFoundException>( () => args.AddAlias( "nonexisting", "test" ) );
+			ExceptionAssert.Assert<KeyNotFoundException>( () => args.RegisterAlias( "nonexisting", "test" ) );
 		}
 
 		[TestMethod]
 		public void FlagTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
-			args.AddFlag( "flag" );
+			args.RegisterArgument( "flag", new FlagArgument() );
 
 			Assert.IsTrue( args.Process( string.Empty ) );
-			Assert.IsFalse( args.GetFlag( "flag" ) );
-			ExceptionAssert.Assert<KeyNotFoundException>( () => args.GetFlag( "nonexisting" ) );
+			Assert.IsFalse( args.GetValue<bool>( "flag" ) );
+			ExceptionAssert.Assert<KeyNotFoundException>( () => args.GetValue<bool>( "nonexisting" ) );
 
 			Assert.IsTrue( args.Process( "-flag" ) );
-			Assert.IsTrue( args.GetFlag( "flag" ) );
+			Assert.IsTrue( args.GetValue<bool>( "flag" ) );
 
 			Assert.IsTrue( args.Process( "--flag" ) );
-			Assert.IsTrue( args.GetFlag( "flag" ) );
+			Assert.IsTrue( args.GetValue<bool>( "flag" ) );
 
 			Assert.IsTrue( args.Process( "/flag" ) );
-			Assert.IsTrue( args.GetFlag( "flag" ) );
+			Assert.IsTrue( args.GetValue<bool>( "flag" ) );
 		}
 
 		[TestMethod]
@@ -98,66 +98,63 @@ namespace NetArgsTests
 		public void CollectionTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
-			args.AddOption( "option", false, "123" );
-			args.SetCollection( "option" );
-
-			ExceptionAssert.Assert<KeyNotFoundException>( () => args.SetCollection( "nonexisting" ) );
+			args.RegisterArgument( "option", new CollectionArgument() );
 
 			Assert.IsTrue( args.Process( "/option=value1" ) );
-			string[] values = args.GetCollection( "option" );
-			CollectionAssert.AreEqual( new[] { "value1" }, args.GetCollection( "option" ) );
+			string[] values = args.GetValue<string[]>( "option" );
+			CollectionAssert.AreEqual( new[] { "value1" }, args.GetValue<string[]>( "option" ) );
 
 			Assert.IsTrue( args.Process( "/option=value1 /option=value2" ) );
-			values = args.GetCollection( "option" );
-			CollectionAssert.AreEqual( new[] { "value1", "value2" }, args.GetCollection( "option" ) );
+			values = args.GetValue<string[]>( "option" );
+			CollectionAssert.AreEqual( new[] { "value1", "value2" }, values );
 
 			Assert.IsTrue( args.Process( "/option=value1 --option=value2" ) );
-			values = args.GetCollection( "option" );
-			CollectionAssert.AreEqual( new[] { "value1", "value2" }, args.GetCollection( "option" ) );
+			values = args.GetValue<string[]>( "option" );
+			CollectionAssert.AreEqual( new[] { "value1", "value2" }, values );
 
-			ExceptionAssert.Assert<KeyNotFoundException>( () => args.GetCollection( "nonexisting" ) );
+			ExceptionAssert.Assert<KeyNotFoundException>( () => args.GetValue<string[]>( "nonexisting" ) );
 		}
 
 		[TestMethod]
 		public void OptionTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
-			args.AddOption( "option", false, "123" );
+			args.RegisterArgument( "option", new OptionArgument( "123", false ) );
 
 			Assert.IsTrue( args.Process( string.Empty ) );
-			Assert.AreEqual( "123", args.GetOption( "option" ) );
+			Assert.AreEqual( "123", args.GetValue<string>( "option" ) );
 
 			Assert.IsTrue( args.Process( "/option=42" ) );
-			Assert.AreEqual( "42", args.GetOption( "option" ) );
+			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
 			Assert.IsTrue( args.Process( "/option:42" ) );
-			Assert.AreEqual( "42", args.GetOption( "option" ) );
+			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
 			Assert.IsTrue( args.Process( "/option 42" ) );
-			Assert.AreEqual( "42", args.GetOption( "option" ) );
+			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
 			Assert.IsTrue( args.Process( "--option=42" ) );
-			Assert.AreEqual( "42", args.GetOption( "option" ) );
+			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
 			Assert.IsTrue( args.Process( "--option:42" ) );
-			Assert.AreEqual( "42", args.GetOption( "option" ) );
+			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
 			Assert.IsTrue( args.Process( "--option 42" ) );
-			Assert.AreEqual( "42", args.GetOption( "option" ) );
+			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
 			Assert.IsTrue( args.Process( "-option 42" ) );
-			Assert.AreEqual( "42", args.GetOption( "option" ) );
+			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
 			Assert.IsTrue( args.Process( "-option=42" ) );
-			Assert.AreEqual( "42", args.GetOption( "option" ) );
+			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
 			Assert.IsTrue( args.Process( "-option:42" ) );
-			Assert.AreEqual( "42", args.GetOption( "option" ) );
+			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
-			ExceptionAssert.Assert<KeyNotFoundException>( () => args.GetOption( "nonexisting" ) );
+			ExceptionAssert.Assert<KeyNotFoundException>( () => args.GetValue<string>( "nonexisting" ) );
 
 			Assert.IsTrue( args.Process( "-option:42 /option=444" ) );
-			Assert.AreEqual( "444", args.GetOption( "option" ) );
+			Assert.AreEqual( "444", args.GetValue<string>( "option" ) );
 		}
 
 		[TestMethod]
@@ -189,7 +186,7 @@ namespace NetArgsTests
 		public void ValidateFlagTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
-			args.AddFlag( "flag", true );
+			args.RegisterArgument( "flag", new FlagArgument( true, true ) );
 
 			Assert.IsFalse( args.Process( string.Empty ) );
 		}

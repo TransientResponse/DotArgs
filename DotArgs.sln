@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetArgs", "NetArgs\NetArgs.csproj", "{4B5D6ADC-2BAF-444E-98E5-DF80A0FE4C7F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotArgs", "DotArgs\DotArgs.csproj", "{4B5D6ADC-2BAF-444E-98E5-DF80A0FE4C7F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetArgsTests", "NetArgsTests\NetArgsTests.csproj", "{9E8347D2-7A42-4F4D-B868-08D87EF9D117}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotArgsTests", "DotArgsTests\DotArgsTests.csproj", "{9E8347D2-7A42-4F4D-B868-08D87EF9D117}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

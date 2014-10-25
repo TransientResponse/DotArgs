@@ -6,8 +6,8 @@
     <ProjectGuid>{9E8347D2-7A42-4F4D-B868-08D87EF9D117}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>NetArgsTests</RootNamespace>
-    <AssemblyName>NetArgsTests</AssemblyName>
+    <RootNamespace>DotArgsTest</RootNamespace>
+    <AssemblyName>DotArgsTest</AssemblyName>
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -55,9 +55,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NetArgs\NetArgs.csproj">
+    <ProjectReference Include="..\DotArgs\DotArgs.csproj">
       <Project>{4b5d6adc-2baf-444e-98e5-df80a0fe4c7f}</Project>
-      <Name>NetArgs</Name>
+      <Name>DotArgs</Name>
     </ProjectReference>
   </ItemGroup>
   <Choose>
