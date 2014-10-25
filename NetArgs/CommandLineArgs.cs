@@ -146,7 +146,18 @@ namespace NetArgs
 		/// </exception>
 		public string[] GetCollection( string name )
 		{
-			throw new NotImplementedException();
+			if( !Commands.ContainsKey( name ) )
+			{
+				throw new KeyNotFoundException( string.Format( "An collection with the name {0} was not registered.", name ) );
+			}
+
+			CommandEntry entry = Commands[name];
+			if( entry.Type != CommandType.Collection )
+			{
+				throw new KeyNotFoundException( string.Format( "An collection with the name {0} was not registered.", name ) );
+			}
+
+			return (string[])entry.Value;
 		}
 
 		/// <summary>Gets the value of a flag.</summary>
@@ -261,12 +272,20 @@ namespace NetArgs
 						value = parts[i + 1];
 						i++;
 						// TODO: Check if value is not a flag/option/whatever
-
-						entry.Value = value;
 					}
-					else if( value != null )
+
+					if( value != null )
 					{
-						entry.Value = value;
+						if( entry.Type == CommandType.Collection )
+						{
+							List<string> values = new List<string>( (string[])entry.Value );
+							values.Add( value );
+							entry.Value = values.ToArray();
+						}
+						else
+						{
+							entry.Value = value;
+						}
 					}
 					else
 					{
@@ -309,10 +328,24 @@ namespace NetArgs
 		/// </exception>
 		public void SetCollection( string name, int min = 0, int max = int.MaxValue )
 		{
+			if( !Commands.ContainsKey( name ) )
+			{
+				throw new KeyNotFoundException( string.Format( "An option with the name {0} was not registered.", name ) );
+			}
+
+			CommandEntryCollection entry = new CommandEntryCollection( Commands[name] as CommandEntryOption );
+			Commands[name] = entry;
+		}
+
+		/// <summary>Defines a help message that describes the workings of a flag or option.</summary>
+		/// <param name="name">Name of the flag/option the message applies to.</param>
+		/// <param name="message">The help message for the flag/option.</param>
+		public void SetHelpText( string name, string message )
+		{
 			throw new NotImplementedException();
 		}
 
-		string ExtractValueFromArg( string arg )
+		private string ExtractValueFromArg( string arg )
 		{
 			char[] seperators = new[] { '=', ':' };
 
@@ -323,14 +356,6 @@ namespace NetArgs
 			}
 
 			return arg.Substring( idx + 1 );
-		}
-
-		/// <summary>Defines a help message that describes the workings of a flag or option.</summary>
-		/// <param name="name">Name of the flag/option the message applies to.</param>
-		/// <param name="message">The help message for the flag/option.</param>
-		public void SetHelpText( string name, string message )
-		{
-			throw new NotImplementedException();
 		}
 
 		private string GetArgName( string arg )
@@ -506,6 +531,18 @@ namespace NetArgs
 		private CommandEntry Reference;
 	}
 
+	internal class CommandEntryCollection : CommandEntryOption
+	{
+		public CommandEntryCollection( CommandEntryOption option )
+		{
+			this.DefaultValue = new string[0];
+			this.Required = option.Required;
+			this.Value = new string[0];
+		}
+
+		internal override CommandType Type { get { return CommandType.Collection; } }
+	}
+
 	internal class CommandEntryFlag : CommandEntry
 	{
 		internal override CommandType Type { get { return CommandType.Flag; } }
@@ -526,11 +563,6 @@ namespace NetArgs
 		public Func<string, bool> Validator { get; set; }
 
 		internal override CommandType Type { get { return CommandType.Option; } }
-	}
-
-	internal class CommandEntrySwitch : CommandEntryOption
-	{
-		public string[] AvailableOptions { get; set; }
 	}
 
 	internal enum CommandType

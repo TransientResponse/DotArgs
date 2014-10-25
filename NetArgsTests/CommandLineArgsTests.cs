@@ -95,6 +95,30 @@ namespace NetArgsTests
 		}
 
 		[TestMethod]
+		public void CollectionTest()
+		{
+			CommandLineArgs args = new CommandLineArgs();
+			args.AddOption( "option", false, "123" );
+			args.SetCollection( "option" );
+
+			ExceptionAssert.Assert<KeyNotFoundException>( () => args.SetCollection( "nonexisting" ) );
+
+			Assert.IsTrue( args.Process( "/option=value1" ) );
+			string[] values = args.GetCollection( "option" );
+			CollectionAssert.AreEqual( new[] { "value1" }, args.GetCollection( "option" ) );
+
+			Assert.IsTrue( args.Process( "/option=value1 /option=value2" ) );
+			values = args.GetCollection( "option" );
+			CollectionAssert.AreEqual( new[] { "value1", "value2" }, args.GetCollection( "option" ) );
+
+			Assert.IsTrue( args.Process( "/option=value1 --option=value2" ) );
+			values = args.GetCollection( "option" );
+			CollectionAssert.AreEqual( new[] { "value1", "value2" }, args.GetCollection( "option" ) );
+
+			ExceptionAssert.Assert<KeyNotFoundException>( () => args.GetCollection( "nonexisting" ) );
+		}
+
+		[TestMethod]
 		public void OptionTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
@@ -131,6 +155,9 @@ namespace NetArgsTests
 			Assert.AreEqual( "42", args.GetOption( "option" ) );
 
 			ExceptionAssert.Assert<KeyNotFoundException>( () => args.GetOption( "nonexisting" ) );
+
+			Assert.IsTrue( args.Process( "-option:42 /option=444" ) );
+			Assert.AreEqual( "444", args.GetOption( "option" ) );
 		}
 
 		[TestMethod]
