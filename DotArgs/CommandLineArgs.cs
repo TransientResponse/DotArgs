@@ -529,4 +529,36 @@ namespace DotArgs
 			return true;
 		}
 	}
+
+	/// <summary>
+	/// A set argument is an option that 
+	/// </summary>
+	public class SetArgument : OptionArgument
+	{
+		/// <summary>
+		/// Initializes a new instance of the <see cref="SetArgument"/> class.
+		/// </summary>
+		/// <param name="validOptions">The valid options this argument may be given.</param>
+		/// <param name="defaultValue">The default value.</param>
+		/// <param name="required">Flag indicating whether this argument is required.</param>
+		public SetArgument( string[] validOptions, string defaultValue, bool required = false )
+			: base( defaultValue, required )
+		{
+			ValidOptions = validOptions;
+		}
+
+		/// <summary>
+		/// Validates the specified value.
+		/// </summary>
+		/// <param name="value">The value to validate.</param>
+		/// <returns>
+		///   <c>true</c> if <paramref name="value" /> is valid; otherwise <c>false</c> .
+		/// </returns>
+		protected internal override bool Validate( object value )
+		{
+			return ValidOptions.Contains( value as string );
+		}
+
+		string[] ValidOptions;
+	}
 }

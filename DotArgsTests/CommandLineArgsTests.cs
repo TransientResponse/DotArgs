@@ -189,6 +189,22 @@ namespace DotArgsTest
 		}
 
 		[TestMethod]
+		public void SetTest()
+		{
+
+			CommandLineArgs args = new CommandLineArgs();
+			args.RegisterArgument( "set", new SetArgument( new[] { "v1", "v2" }, "v1" ) );
+
+			Assert.IsTrue( args.Process( "/set=v1" ) );
+			Assert.AreEqual( "v1", args.GetValue<string>( "set" ) );
+
+			Assert.IsTrue( args.Process( "/set=v2" ) );
+			Assert.AreEqual( "v2", args.GetValue<string>( "set" ) );
+
+			Assert.IsFalse( args.Process( "/set=v3" ) );
+		}
+
+		[TestMethod]
 		public void ValidateFlagTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
