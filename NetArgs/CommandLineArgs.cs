@@ -254,6 +254,25 @@ namespace NetArgs
 				else
 				{
 					// Not so simple cases: Collection and Option
+					string value = ExtractValueFromArg( parts[i] );
+
+					if( value == null && i < parts.Count - 1 )
+					{
+						value = parts[i + 1];
+						i++;
+						// TODO: Check if value is not a flag/option/whatever
+
+						entry.Value = value;
+					}
+					else if( value != null )
+					{
+						entry.Value = value;
+					}
+					else
+					{
+						// Missing argument for
+						errors = true;
+					}
 				}
 			}
 
@@ -293,6 +312,19 @@ namespace NetArgs
 			throw new NotImplementedException();
 		}
 
+		string ExtractValueFromArg( string arg )
+		{
+			char[] seperators = new[] { '=', ':' };
+
+			int idx = arg.IndexOfAny( seperators );
+			if( idx == -1 )
+			{
+				return null;
+			}
+
+			return arg.Substring( idx + 1 );
+		}
+
 		/// <summary>Defines a help message that describes the workings of a flag or option.</summary>
 		/// <param name="name">Name of the flag/option the message applies to.</param>
 		/// <param name="message">The help message for the flag/option.</param>
@@ -303,24 +335,36 @@ namespace NetArgs
 
 		private string GetArgName( string arg )
 		{
+			char[] seperators = new[] { '=', ':' };
+			char[] prefixes = new[] { '-', '/' };
+
+			int end = arg.Length;
 			int remove = 0;
+			bool atStart = true;
+
 			for( int i = 0; i < arg.Length; ++i )
 			{
-				if( arg[i] == '-' || arg[i] == '/' )
+				if( prefixes.Contains( arg[i] ) && atStart )
 				{
 					remove++;
 				}
+				else if( seperators.Contains( arg[i] ) )
+				{
+					end = i;
+				}
 				else
 				{
-					break;
+					atStart = false;
 				}
 			}
 
 			if( remove > 0 )
 			{
 				arg = arg.Substring( remove );
+				end -= remove;
 			}
-			return arg;
+
+			return arg.Substring( 0, end );
 		}
 
 		private void Reset()

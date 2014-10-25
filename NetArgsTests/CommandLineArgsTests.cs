@@ -80,6 +80,18 @@ namespace NetArgsTests
 
 			name = (string)obj.Invoke( "GetArgName", "/--/-/-//arg" );
 			Assert.AreEqual( "arg", name );
+
+			name = (string)obj.Invoke( "GetArgName", "/option=value" );
+			Assert.AreEqual( "option", name );
+
+			name = (string)obj.Invoke( "GetArgName", "/option:value" );
+			Assert.AreEqual( "option", name );
+
+			name = (string)obj.Invoke( "GetArgName", "--option=value" );
+			Assert.AreEqual( "option", name );
+
+			name = (string)obj.Invoke( "GetArgName", "--option:value" );
+			Assert.AreEqual( "option", name );
 		}
 
 		[TestMethod]
