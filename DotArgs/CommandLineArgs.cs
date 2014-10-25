@@ -32,6 +32,20 @@ namespace DotArgs
 			Reference = entry;
 		}
 
+		/// <summary>Gets the value of this argument.</summary>
+		/// <returns>The argument's value.</returns>
+		public override object GetValue()
+		{
+			return Reference.GetValue();
+		}
+
+		/// <summary>Sets the value for this argument.</summary>
+		/// <param name="value">The value to set.</param>
+		public override void SetValue( object value )
+		{
+			Reference.SetValue( value );
+		}
+
 		/// <summary>
 		/// The default value that will be used if no value was passed on the command line.
 		/// </summary>
@@ -47,19 +61,7 @@ namespace DotArgs
 		/// </summary>
 		public new bool IsRequired { get { return Reference.IsRequired; } }
 
-
-		internal new object Value { get { return Reference.Value; } set { Reference.Value = value; } }
-
 		private Argument Reference;
-
-		/// <summary>
-		/// Sets the value for this argument.
-		/// </summary>
-		/// <param name="value">The value to set.</param>
-		public override void SetValue( object value )
-		{
-			Reference.SetValue( value );
-		}
 	}
 
 	/// <summary>
@@ -76,29 +78,40 @@ namespace DotArgs
 			IsRequired = required;
 		}
 
-		internal virtual bool Validate( string value )
+		/// <summary>Gets the value of this argument.</summary>
+		/// <returns>The argument's value.</returns>
+		public virtual object GetValue()
 		{
-			if( IsRequired )
-			{
-				return !string.IsNullOrWhiteSpace( value );
-			}
-
-			return true;
+			return Value;
 		}
 
-		/// <summary>
-		/// Sets the value for this argument.
-		/// </summary>
+		/// <summary>Resets this argument.</summary>
+		public virtual void Reset()
+		{
+			Value = DefaultValue;
+		}
+
+		/// <summary>Sets the value for this argument.</summary>
 		/// <param name="value">The value to set.</param>
 		public virtual void SetValue( object value )
 		{
 			Value = value;
 		}
 
-		/// <summary>
-		/// Indicates whether this argument requires an explicit option.
-		/// </summary>
-		public bool NeedsValue { get; protected set; }
+		/// <summary>Validates the specified value.</summary>
+		/// <param name="value">The value to validate.</param>
+		/// <returns>
+		/// <c>true</c> if <paramref name="value"/> is valid; otherwise <c>false</c> .
+		/// </returns>
+		protected internal virtual bool Validate( object value )
+		{
+			if( IsRequired )
+			{
+				return !string.IsNullOrWhiteSpace( value as string );
+			}
+
+			return true;
+		}
 
 		/// <summary>
 		/// The default value that will be used if no value was passed on the command line.
@@ -111,19 +124,51 @@ namespace DotArgs
 		/// </summary>
 		public bool IsRequired { get; protected set; }
 
+		/// <summary>Indicates whether this argument requires an explicit option.</summary>
+		public bool NeedsValue { get; protected set; }
+
 		/// <summary>A method that can be used to validate a value for this argument.</summary>
 		public Func<object, bool> Validator { get; set; }
 
+		private object Value;
+	}
 
-		internal object Value { get; set; }
+	/// <summary>An option that can take multiple values.</summary>
+	public class CollectionArgument : OptionArgument
+	{
+		/// <summary>Initializes a new instance of the <see cref="CollectionArgument"/> class.</summary>
+		/// <param name="required">Flag indicating whether this argument is required.</param>
+		public CollectionArgument( bool required = false )
+			: base( null, required )
+		{
+			base.SetValue( new string[0] );
+		}
+
+		/// <summary>Resets this argument.</summary>
+		public override void Reset()
+		{
+			Values.Clear();
+		}
+
+		/// <summary>Sets the value for this argument.</summary>
+		/// <param name="value">The value to set.</param>
+		public override void SetValue( object value )
+		{
+			Values.Add( value as string );
+		}
 
 		/// <summary>
-		/// Resets this argument.
+		/// Gets the value of this argument.
 		/// </summary>
-		public virtual void Reset()
+		/// <returns>
+		/// The argument's value.
+		/// </returns>
+		public override object GetValue()
 		{
-			Value = DefaultValue;
+			return Values.ToArray();
 		}
+
+		private List<string> Values = new List<string>();
 	}
 
 	/// <summary>Class for defining, validating and processing command line arguments.</summary>
@@ -138,8 +183,8 @@ namespace DotArgs
 		/// <summary>Gets the value of an argument.</summary>
 		/// <param name="name">Name of the argument to read.</param>
 		/// <returns>
-		/// The effective value of the argument. If the argument was omitted in the arguments,
-		/// the default value will be returned.
+		/// The effective value of the argument. If the argument was omitted in the arguments, the
+		/// default value will be returned.
 		/// </returns>
 		/// <exception cref="System.Collections.Generic.KeyNotFoundException">
 		/// An argument with the name <paramref name="name"/> was not registered.
@@ -152,10 +197,8 @@ namespace DotArgs
 			}
 
 			Argument entry = Arguments[name];
-			return (T)entry.Value;
+			return (T)entry.GetValue();
 		}
-
-		
 
 		/// <summary>Prints a help message describing the effects of all available options.</summary>
 		/// <param name="errorMessage">Optional error message to display.</param>
@@ -229,7 +272,7 @@ namespace DotArgs
 				}
 				else
 				{
-					entry.Value = true;					
+					entry.SetValue( true );
 				}
 			}
 
@@ -396,7 +439,7 @@ namespace DotArgs
 			foreach( KeyValuePair<string, Argument> kvp in Arguments.Where( kvp => !( kvp.Value is AliasArgument ) ) )
 			{
 				Argument entry = kvp.Value;
-				if( !entry.Validate( entry.Value as string ) )
+				if( !entry.Validate( entry.GetValue() ) )
 				{
 					errors = true;
 				}
@@ -430,6 +473,27 @@ namespace DotArgs
 		public FlagArgument( bool defaultValue = false, bool required = false )
 			: base( defaultValue, required )
 		{
+			if( IsRequired )
+			{
+				DefaultValue = null;
+			}
+		}
+
+		/// <summary>Validates the specified value.</summary>
+		/// <param name="value">The value to validate.</param>
+		/// <returns>
+		/// <c>true</c> if <paramref name="value"/> is valid; otherwise <c>false</c> .
+		/// </returns>
+		protected internal override bool Validate( object value )
+		{
+			bool valid = value is bool;
+
+			if( IsRequired )
+			{
+				valid = valid && value != null;
+			}
+
+			return valid;
 		}
 	}
 
@@ -450,7 +514,12 @@ namespace DotArgs
 			NeedsValue = true;
 		}
 
-		internal override bool Validate( string value )
+		/// <summary>Validates the specified value.</summary>
+		/// <param name="value">The value to validate.</param>
+		/// <returns>
+		/// <c>true</c> if <paramref name="value"/> is valid; otherwise <c>false</c> .
+		/// </returns>
+		protected internal override bool Validate( object value )
 		{
 			if( Validator != null )
 			{
@@ -459,45 +528,5 @@ namespace DotArgs
 
 			return true;
 		}
-	}
-
-	/// <summary>
-	/// An option that can take multiple values.
-	/// </summary>
-	public class CollectionArgument : OptionArgument
-	{
-		public CollectionArgument( bool required = false)
-			: base( null, required )
-		{
-			base.SetValue( new string[0] );
-		}
-
-		/// <summary>
-		/// Resets this argument.
-		/// </summary>
-		public override void Reset()
-		{
-			Values.Clear();
-		}
-
-		/// <summary>
-		/// Sets the value for this argument.
-		/// </summary>
-		/// <param name="value">The value to set.</param>
-		public override void SetValue( object value )
-		{
-			Values.Add( value as string );
-
-			base.SetValue( Values.ToArray() );
-		}
-
-		List<string> Values = new List<string>();
-	}
-
-	internal enum CommandType
-	{
-		Flag,
-		Option,
-		Collection
 	}
 }

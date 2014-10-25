@@ -23,6 +23,12 @@ namespace DotArgsTest
 			Assert.IsTrue( args.GetValue<bool>( "alias" ) );
 
 			ExceptionAssert.Assert<KeyNotFoundException>( () => args.RegisterAlias( "nonexisting", "test" ) );
+
+			args = new CommandLineArgs();
+			args.RegisterArgument( "flag", new FlagArgument( false , true ) );
+			args.RegisterAlias( "flag", "alias" );
+
+			Assert.IsTrue( args.Process( "-alias" ) );
 		}
 
 		[TestMethod]
