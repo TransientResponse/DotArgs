@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.IO;
+using System.Text;
 using DotArgs;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace DotArgsTest
+namespace DotArgsTests
 {
 	[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 	[TestClass]
@@ -13,22 +15,55 @@ namespace DotArgsTest
 		public void AliasTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
-			args.RegisterArgument( "flag", new FlagArgument(false) );
+			args.RegisterArgument( "flag", new FlagArgument( false ) );
 			args.RegisterAlias( "flag", "alias" );
 
-			Assert.IsTrue( args.Process( string.Empty ) );
+			Assert.IsTrue( args.Validate( string.Empty ) );
 			Assert.IsFalse( args.GetValue<bool>( "alias" ) );
 
-			Assert.IsTrue( args.Process( "-alias" ) );
+			Assert.IsTrue( args.Validate( "-alias" ) );
 			Assert.IsTrue( args.GetValue<bool>( "alias" ) );
 
 			ExceptionAssert.Assert<KeyNotFoundException>( () => args.RegisterAlias( "nonexisting", "test" ) );
 
 			args = new CommandLineArgs();
-			args.RegisterArgument( "flag", new FlagArgument( false , true ) );
+			args.RegisterArgument( "flag", new FlagArgument( false, true ) );
 			args.RegisterAlias( "flag", "alias" );
 
-			Assert.IsTrue( args.Process( "-alias" ) );
+			Assert.IsTrue( args.Validate( "-alias" ) );
+		}
+
+		[TestMethod]
+		public void CollectionTest()
+		{
+			CommandLineArgs args = new CommandLineArgs();
+			args.RegisterArgument( "option", new CollectionArgument() );
+
+			Assert.IsTrue( args.Validate( "/option=value1" ) );
+			string[] values = args.GetValue<string[]>( "option" );
+			CollectionAssert.AreEqual( new[] { "value1" }, args.GetValue<string[]>( "option" ) );
+
+			Assert.IsTrue( args.Validate( "/option=value1 /option=value2" ) );
+			values = args.GetValue<string[]>( "option" );
+			CollectionAssert.AreEqual( new[] { "value1", "value2" }, values );
+
+			Assert.IsTrue( args.Validate( "/option=value1 --option=value2" ) );
+			values = args.GetValue<string[]>( "option" );
+			CollectionAssert.AreEqual( new[] { "value1", "value2" }, values );
+
+			ExceptionAssert.Assert<KeyNotFoundException>( () => args.GetValue<string[]>( "nonexisting" ) );
+		}
+
+		[TestMethod]
+		public void CustomValidatorTest()
+		{
+			CommandLineArgs args = new CommandLineArgs();
+			OptionArgument option = new OptionArgument( "123", true );
+			option.Validator = ( v ) => v.Equals( "test" );
+			args.RegisterArgument( "option", option );
+
+			Assert.IsFalse( args.Validate( "/option=123" ) );
+			Assert.IsTrue( args.Validate( "/option=test" ) );
 		}
 
 		[TestMethod]
@@ -37,17 +72,17 @@ namespace DotArgsTest
 			CommandLineArgs args = new CommandLineArgs();
 			args.RegisterArgument( "flag", new FlagArgument() );
 
-			Assert.IsTrue( args.Process( string.Empty ) );
+			Assert.IsTrue( args.Validate( string.Empty ) );
 			Assert.IsFalse( args.GetValue<bool>( "flag" ) );
 			ExceptionAssert.Assert<KeyNotFoundException>( () => args.GetValue<bool>( "nonexisting" ) );
 
-			Assert.IsTrue( args.Process( "-flag" ) );
+			Assert.IsTrue( args.Validate( "-flag" ) );
 			Assert.IsTrue( args.GetValue<bool>( "flag" ) );
 
-			Assert.IsTrue( args.Process( "--flag" ) );
+			Assert.IsTrue( args.Validate( "--flag" ) );
 			Assert.IsTrue( args.GetValue<bool>( "flag" ) );
 
-			Assert.IsTrue( args.Process( "/flag" ) );
+			Assert.IsTrue( args.Validate( "/flag" ) );
 			Assert.IsTrue( args.GetValue<bool>( "flag" ) );
 		}
 
@@ -101,66 +136,187 @@ namespace DotArgsTest
 		}
 
 		[TestMethod]
-		public void CollectionTest()
-		{
-			CommandLineArgs args = new CommandLineArgs();
-			args.RegisterArgument( "option", new CollectionArgument() );
-
-			Assert.IsTrue( args.Process( "/option=value1" ) );
-			string[] values = args.GetValue<string[]>( "option" );
-			CollectionAssert.AreEqual( new[] { "value1" }, args.GetValue<string[]>( "option" ) );
-
-			Assert.IsTrue( args.Process( "/option=value1 /option=value2" ) );
-			values = args.GetValue<string[]>( "option" );
-			CollectionAssert.AreEqual( new[] { "value1", "value2" }, values );
-
-			Assert.IsTrue( args.Process( "/option=value1 --option=value2" ) );
-			values = args.GetValue<string[]>( "option" );
-			CollectionAssert.AreEqual( new[] { "value1", "value2" }, values );
-
-			ExceptionAssert.Assert<KeyNotFoundException>( () => args.GetValue<string[]>( "nonexisting" ) );
-		}
-
-		[TestMethod]
 		public void OptionTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
 			args.RegisterArgument( "option", new OptionArgument( "123", false ) );
 
-			Assert.IsTrue( args.Process( string.Empty ) );
+			Assert.IsTrue( args.Validate( string.Empty ) );
 			Assert.AreEqual( "123", args.GetValue<string>( "option" ) );
 
-			Assert.IsTrue( args.Process( "/option=42" ) );
+			Assert.IsTrue( args.Validate( "/option=42" ) );
 			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
-			Assert.IsTrue( args.Process( "/option:42" ) );
+			Assert.IsTrue( args.Validate( "/option:42" ) );
 			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
-			Assert.IsTrue( args.Process( "/option 42" ) );
+			Assert.IsTrue( args.Validate( "/option 42" ) );
 			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
-			Assert.IsTrue( args.Process( "--option=42" ) );
+			Assert.IsTrue( args.Validate( "--option=42" ) );
 			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
-			Assert.IsTrue( args.Process( "--option:42" ) );
+			Assert.IsTrue( args.Validate( "--option:42" ) );
 			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
-			Assert.IsTrue( args.Process( "--option 42" ) );
+			Assert.IsTrue( args.Validate( "--option 42" ) );
 			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
-			Assert.IsTrue( args.Process( "-option 42" ) );
+			Assert.IsTrue( args.Validate( "-option 42" ) );
 			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
-			Assert.IsTrue( args.Process( "-option=42" ) );
+			Assert.IsTrue( args.Validate( "-option=42" ) );
 			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
-			Assert.IsTrue( args.Process( "-option:42" ) );
+			Assert.IsTrue( args.Validate( "-option:42" ) );
 			Assert.AreEqual( "42", args.GetValue<string>( "option" ) );
 
 			ExceptionAssert.Assert<KeyNotFoundException>( () => args.GetValue<string>( "nonexisting" ) );
 
-			Assert.IsTrue( args.Process( "-option:42 /option=444" ) );
+			Assert.IsTrue( args.Validate( "-option:42 /option=444" ) );
 			Assert.AreEqual( "444", args.GetValue<string>( "option" ) );
+		}
+
+		[TestMethod]
+		public void ProcessTest()
+		{
+			bool flagCalled = false;
+			bool optionCalled = false;
+			CommandLineArgs args = new CommandLineArgs();
+			args.RegisterArgument( "flag", new FlagArgument( true )
+				{
+					Processor = ( value ) => flagCalled = true
+				} );
+			args.RegisterArgument( "option", new OptionArgument( "test" )
+				{
+					Processor = ( value ) => optionCalled = true
+				} );
+
+			Assert.IsTrue( args.Validate( "/flag /option=value" ) );
+
+			Assert.IsFalse( flagCalled );
+			Assert.IsFalse( optionCalled );
+
+			args.Process();
+
+			Assert.IsTrue( flagCalled );
+			Assert.IsTrue( optionCalled );
+		}
+
+		[TestMethod]
+		public void SetTest()
+		{
+			CommandLineArgs args = new CommandLineArgs();
+			args.RegisterArgument( "set", new SetArgument( new[] { "v1", "v2" }, "v1" ) );
+
+			Assert.IsTrue( args.Validate( "/set=v1" ) );
+			Assert.AreEqual( "v1", args.GetValue<string>( "set" ) );
+
+			Assert.IsTrue( args.Validate( "/set=v2" ) );
+			Assert.AreEqual( "v2", args.GetValue<string>( "set" ) );
+
+			Assert.IsFalse( args.Validate( "/set=v3" ) );
+		}
+
+		[TestMethod]
+		public void HelpPageExampleTest()
+		{
+			CommandLineArgs args = new CommandLineArgs();
+			args.ApplicationInfo = "MyCoolProgram v1.2 Copyright (C) John Smith <smith@example.com>";
+			args.AddExample( "example 1", "/flag /option=1" );
+			args.AddExample( "great example", "/flag2" );
+			args.AddExample( "example 2", "/option=222" );
+
+			using( TextWriter writer = new StringWriter() )
+			{
+				args.OutputWriter = writer;
+
+				args.PrintHelp();
+
+				StringBuilder sb = new StringBuilder();
+				sb.AppendLine( args.ApplicationInfo );
+				sb.AppendLine();
+				sb.AppendLine( "Usage:" );
+				sb.AppendFormat( "DotArgsTests " );
+				sb.AppendLine();
+				sb.AppendLine();
+				sb.AppendLine( "Examples:" );
+				sb.AppendLine();
+				sb.AppendLine( "example 1" );
+				sb.AppendLine( "/flag /option=1" );
+				sb.AppendLine();
+				sb.AppendLine( "example 2" );
+				sb.AppendLine( "/option=222" );
+				sb.AppendLine();
+				sb.AppendLine( "great example" );
+				sb.AppendLine( "/flag2" );
+
+				Assert.AreEqual( sb.ToString(), writer.ToString() );
+			}
+		}
+
+		[TestMethod]
+		public void PrintHelpTest()
+		{
+			CommandLineArgs args = new CommandLineArgs();
+			args.ApplicationInfo = "MyCoolProgram v1.2 Copyright (C) John Smith <smith@example.com>";
+
+			args.RegisterArgument( "flag", new FlagArgument(true, true) { HelpMessage = "This is a flag." } );
+			args.RegisterArgument( "option", new OptionArgument("123", false) { HelpMessage = "This is an option." } );
+
+			using( TextWriter writer = new StringWriter() )
+			{
+				args.OutputWriter = writer;
+
+				args.PrintHelp();
+
+				StringBuilder sb = new StringBuilder();
+				sb.AppendLine( args.ApplicationInfo );
+				sb.AppendLine();
+				sb.AppendLine( "Usage:" );
+				sb.AppendFormat( "DotArgsTests </flag> [/option=OPTION, 123]" );
+				sb.AppendLine();
+				sb.AppendLine();
+				sb.AppendFormat( "{0,-10}{1}", "flag", "This is a flag." );
+				sb.AppendLine();
+				sb.AppendFormat( "{0,-10}Required", "" );
+				sb.AppendLine();
+				sb.AppendLine();
+				sb.AppendFormat( "{0,-10}{1}", "option", "This is an option." );
+				sb.AppendLine();
+				sb.AppendFormat( "{0,-10}Optional, Default value: 123", "" );
+				sb.AppendLine();
+
+				Assert.AreEqual( sb.ToString(), writer.ToString() );
+			}
+
+			using( TextWriter writer = new StringWriter() )
+			{
+				args.OutputWriter = writer;
+
+				args.PrintHelp( "This is an error");
+
+				StringBuilder sb = new StringBuilder();
+				sb.AppendLine( args.ApplicationInfo );
+				sb.AppendLine();
+				sb.AppendLine( "This is an error" );
+				sb.AppendLine();
+				sb.AppendLine( "Usage:" );
+				sb.AppendFormat( "DotArgsTests </flag> [/option=OPTION, 123]" );
+				sb.AppendLine();
+				sb.AppendLine();
+				sb.AppendFormat( "{0,-10}{1}", "flag", "This is a flag." );
+				sb.AppendLine();
+				sb.AppendFormat( "{0,-10}Required", "" );
+				sb.AppendLine();
+				sb.AppendLine();
+				sb.AppendFormat( "{0,-10}{1}", "option", "This is an option." );
+				sb.AppendLine();
+				sb.AppendFormat( "{0,-10}Optional, Default value: 123", "" );
+				sb.AppendLine();
+
+				Assert.AreEqual( sb.ToString(), writer.ToString() );
+			}
 		}
 
 		[TestMethod]
@@ -189,28 +345,12 @@ namespace DotArgsTest
 		}
 
 		[TestMethod]
-		public void SetTest()
-		{
-
-			CommandLineArgs args = new CommandLineArgs();
-			args.RegisterArgument( "set", new SetArgument( new[] { "v1", "v2" }, "v1" ) );
-
-			Assert.IsTrue( args.Process( "/set=v1" ) );
-			Assert.AreEqual( "v1", args.GetValue<string>( "set" ) );
-
-			Assert.IsTrue( args.Process( "/set=v2" ) );
-			Assert.AreEqual( "v2", args.GetValue<string>( "set" ) );
-
-			Assert.IsFalse( args.Process( "/set=v3" ) );
-		}
-
-		[TestMethod]
 		public void ValidateFlagTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
 			args.RegisterArgument( "flag", new FlagArgument( true, true ) );
 
-			Assert.IsFalse( args.Process( string.Empty ) );
+			Assert.IsFalse( args.Validate( string.Empty ) );
 		}
 	}
 }

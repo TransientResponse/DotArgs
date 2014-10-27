@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace DotArgs
 {
@@ -44,6 +45,16 @@ namespace DotArgs
 		public override void SetValue( object value )
 		{
 			Reference.SetValue( value );
+		}
+
+		/// <summary>Validates the specified value.</summary>
+		/// <param name="value">The value to validate.</param>
+		/// <returns>
+		/// <c>true</c> if <paramref name="value"/> is valid; otherwise <c>false</c> .
+		/// </returns>
+		protected internal override bool Validate( object value )
+		{
+			return Reference.Validate( value );
 		}
 
 		/// <summary>
@@ -103,21 +114,22 @@ namespace DotArgs
 		/// <returns>
 		/// <c>true</c> if <paramref name="value"/> is valid; otherwise <c>false</c> .
 		/// </returns>
-		protected internal virtual bool Validate( object value )
-		{
-			if( IsRequired )
-			{
-				return !string.IsNullOrWhiteSpace( value as string );
-			}
-
-			return true;
-		}
+		protected internal abstract bool Validate( object value );
 
 		/// <summary>
 		/// The default value that will be used if no value was passed on the command line.
 		/// </summary>
 		/// <remarks>Using this when <see cref="IsRequired"/> is set will have no effect.</remarks>
 		public object DefaultValue { get; protected internal set; }
+
+		/// <summary>The message that will be displayed in the help page for your program.</summary>
+		public string HelpMessage { get; set; }
+
+		/// <summary>
+		/// Value that will be shown (in upper case) in the usage page for this argument. Setting
+		/// this to <c>null</c> will display the default value (i.e. OPTION, COLLECTION, etc.).
+		/// </summary>
+		public string HelpPlaceholder { get; set; }
 
 		/// <summary>
 		/// Flag indicating whether this argument is required, i.e. must be provided via the command line.
@@ -126,6 +138,9 @@ namespace DotArgs
 
 		/// <summary>Indicates whether this argument requires an explicit option.</summary>
 		public bool NeedsValue { get; protected set; }
+
+		/// <summary>A method that can be executed when the command line arguments are processed.</summary>
+		public Action<object> Processor { get; set; }
 
 		/// <summary>A method that can be used to validate a value for this argument.</summary>
 		public Func<object, bool> Validator { get; set; }
@@ -141,7 +156,15 @@ namespace DotArgs
 		public CollectionArgument( bool required = false )
 			: base( null, required )
 		{
+			HelpPlaceholder = "COLLECTION";
 			base.SetValue( new string[0] );
+		}
+
+		/// <summary>Gets the value of this argument.</summary>
+		/// <returns>The argument's value.</returns>
+		public override object GetValue()
+		{
+			return Values.ToArray();
 		}
 
 		/// <summary>Resets this argument.</summary>
@@ -157,17 +180,6 @@ namespace DotArgs
 			Values.Add( value as string );
 		}
 
-		/// <summary>
-		/// Gets the value of this argument.
-		/// </summary>
-		/// <returns>
-		/// The argument's value.
-		/// </returns>
-		public override object GetValue()
-		{
-			return Values.ToArray();
-		}
-
 		private List<string> Values = new List<string>();
 	}
 
@@ -178,6 +190,7 @@ namespace DotArgs
 		public CommandLineArgs()
 		{
 			OutputWriter = Console.Out;
+			ExecuteableName = Path.GetFileNameWithoutExtension( Assembly.GetCallingAssembly().Location );
 		}
 
 		/// <summary>Gets the value of an argument.</summary>
@@ -200,88 +213,65 @@ namespace DotArgs
 			return (T)entry.GetValue();
 		}
 
+		/// <summary>
+		/// Adds an example that will be displayed on the help page.
+		/// </summary>
+		/// <param name="description">The name or description for this example.</param>
+		/// <param name="commandLine">The command line to display for this example.</param>
+		public void AddExample( string description, string commandLine  )
+		{
+			Examples.Add( description, commandLine );
+		}
+
 		/// <summary>Prints a help message describing the effects of all available options.</summary>
 		/// <param name="errorMessage">Optional error message to display.</param>
 		public void PrintHelp( string errorMessage = null )
 		{
-			throw new NotImplementedException();
-		}
+			string argList = string.Join( " ", Arguments.OrderBy( k => k.Key ).Select( a => ArgumentToArgList( a.Key, a.Value ) ) );
 
-		/// <summary>Processes a set of command line arguments.</summary>
-		/// <param name="args">
-		/// Command line arguments to process. This is usally coming from your Main method.
-		/// </param>
-		/// <returns>
-		/// <c>true</c> if the arguments in <paramref name="args"/> are valid; otherwise
-		/// <c>false</c> .
-		/// </returns>
-		public bool Process( string[] args )
-		{
-			return Process( string.Join( " ", args ) );
-		}
-
-		/// <summary>Processes a set of command line arguments.</summary>
-		/// <param name="args">
-		/// Command line arguments to process. This is usally coming from your Main method.
-		/// </param>
-		/// <returns>
-		/// <c>true</c> if the arguments in <paramref name="args"/> are valid; otherwise
-		/// <c>false</c> .
-		/// </returns>
-		public bool Process( string args )
-		{
-			Reset();
-
-			bool errors = false;
-
-			List<string> parts = SplitCommandLine( args );
-			for( int i = 0; i < parts.Count; ++i )
+			OutputWriter.WriteLine( ApplicationInfo );
+			OutputWriter.WriteLine();
+			if( !string.IsNullOrWhiteSpace(errorMessage))
 			{
-				string arg = GetArgName( parts[i] );
-				if( !Arguments.ContainsKey( arg ) )
-				{
-					//errors.Add( string.Format( "Unknown option: {0}", parts[i] ) );
-					errors = true;
-					continue;
-				}
+				OutputWriter.WriteLine( errorMessage );
+				OutputWriter.WriteLine();
+			}
+			OutputWriter.WriteLine( "Usage:" );
+			OutputWriter.WriteLine( "{0} {1}", ExecuteableName, argList );
 
-				Argument entry = Arguments[arg];
-
-				// Simple case: a flag
-				if( entry.NeedsValue )
-				{
-					// Not so simple cases: Collection and Option
-					string value = ExtractValueFromArg( parts[i] );
-
-					if( value == null && i < parts.Count - 1 )
-					{
-						value = parts[i + 1];
-						i++;
-						// TODO: Check if value is not a flag/option/whatever
-					}
-
-					if( value != null )
-					{
-						entry.SetValue( value );
-					}
-					else
-					{
-						// Missing argument for
-						errors = true;
-					}
-				}
-				else
-				{
-					entry.SetValue( true );
-				}
+			foreach( KeyValuePair<string, Argument> kvp in Arguments.OrderBy( k => k.Key ) )
+			{
+				OutputWriter.WriteLine();
+				OutputWriter.WriteLine( "{0,-10}{1}", kvp.Key, kvp.Value.HelpMessage );
+				OutputWriter.WriteLine( "{0,-10}{1}", "", GetArgumentInfo( kvp.Value ) );
 			}
 
-			if( !errors )
+			if( Examples.Any() )
 			{
-				errors = !Validate();
-			}
+				OutputWriter.WriteLine();
+				OutputWriter.WriteLine( "Examples:" );
 
-			return !errors;
+				foreach( KeyValuePair<string,string> kvp in Examples.OrderBy( k => k.Key ))
+				{
+					OutputWriter.WriteLine();
+					OutputWriter.WriteLine( kvp.Key );
+					OutputWriter.WriteLine( kvp.Value );
+				}
+			}
+		}
+
+		/// <summary>
+		/// Processes all registered arguments that have their <see cref="Argument.Processor"/> set.
+		/// </summary>
+		public void Process()
+		{
+			foreach( Argument arg in Arguments.Values.Where( a => !( a is AliasArgument ) ) )
+			{
+				if( arg.Processor != null )
+				{
+					arg.Processor( arg.GetValue() );
+				}
+			}
 		}
 
 		/// <summary>Registers an alias for an existing entry.</summary>
@@ -309,12 +299,136 @@ namespace DotArgs
 			Arguments[name] = arg;
 		}
 
-		/// <summary>Defines a help message that describes the workings of a flag or option.</summary>
-		/// <param name="name">Name of the flag/option the message applies to.</param>
-		/// <param name="message">The help message for the flag/option.</param>
-		public void SetHelpText( string name, string message )
+		/// <summary>
+		/// Registers a help argument that will display the help page for the program if set by the user.
+		/// </summary>
+		/// <param name="name">Name of the flag. The default value is "help".</param>
+		public void RegisterHelpArgument( string name = "help")
 		{
-			throw new NotImplementedException();
+			FlagArgument arg = new FlagArgument();
+			arg.Processor = ( v ) => PrintHelp();
+			arg.HelpMessage = "Displays this help.";
+
+			RegisterArgument( name, arg );
+		}
+
+		/// <summary>Processes a set of command line arguments.</summary>
+		/// <param name="args">
+		/// Command line arguments to process. This is usally coming from your Main method.
+		/// </param>
+		/// <param name="outErrors">
+		/// Optional "out" parameter that holds error strings for every encountered error.
+		/// </param>
+		/// <returns>
+		/// <c>true</c> if the arguments in <paramref name="args"/> are valid; otherwise
+		/// <c>false</c> .
+		/// </returns>
+		public bool Validate( string[] args, OptionalOut<string> outErrors = null )
+		{
+			return Validate( string.Join( " ", args ), outErrors );
+		}
+
+		/// <summary>Processes a set of command line arguments.</summary>
+		/// <param name="args">
+		/// Command line arguments to process. This is usally coming from your Main method.
+		/// </param>
+		/// <param name="outErrors">
+		/// Optional "out" parameter that holds error strings for every encountered error.
+		/// </param>
+		/// <returns>
+		/// <c>true</c> if the arguments in <paramref name="args"/> are valid; otherwise
+		/// <c>false</c> .
+		/// </returns>
+		public bool Validate( string args, OptionalOut<string> outErrors = null )
+		{
+			Reset();
+
+			bool errors = false;
+			List<string> errorList = new List<string>();
+
+			List<string> parts = SplitCommandLine( args );
+			for( int i = 0; i < parts.Count; ++i )
+			{
+				string arg = GetArgName( parts[i] );
+				if( !Arguments.ContainsKey( arg ) )
+				{
+					errorList.Add( string.Format( "Unknown option: {0}", parts[i] ) );
+
+					errors = true;
+					continue;
+				}
+
+				Argument entry = Arguments[arg];
+
+				// Simple case: a flag
+				if( entry.NeedsValue )
+				{
+					// Not so simple cases: Collection and Option
+					string value = ExtractValueFromArg( parts[i] );
+
+					if( value == null && i < parts.Count - 1 )
+					{
+						value = parts[i + 1];
+						i++;
+						// TODO: Check if value is not a flag/option/whatever
+					}
+
+					if( value != null )
+					{
+						entry.SetValue( value );
+					}
+					else
+					{
+						// Missing argument
+						errorList.Add( string.Format( "Missing value for {0}", arg ) );
+						errors = true;
+					}
+				}
+				else
+				{
+					entry.SetValue( true );
+				}
+			}
+
+			foreach( KeyValuePair<string, Argument> kvp in Arguments )
+			{
+				Argument entry = kvp.Value;
+				if( !entry.Validate( entry.GetValue() ) )
+				{
+					errorList.Add( string.Format( "{0}: Invalid value {1}", kvp.Key, entry.GetValue() ) );
+					errors = true;
+				}
+			}
+
+			if( outErrors != null )
+			{
+				outErrors.Result = string.Join( Environment.NewLine, errorList );
+			}
+
+			return !errors;
+		}
+
+		private string ArgumentToArgList( string name, Argument arg )
+		{
+			string desc = string.Format( "/{0}", name );
+			if( arg.NeedsValue )
+			{
+				desc += string.Format( "={0}", arg.HelpPlaceholder );
+			}
+
+			if( arg.IsRequired )
+			{
+				return string.Format( "<{0}>", desc );
+			}
+			else
+			{
+				if( arg.DefaultValue != null )
+				{
+					desc += string.Format( ", {0}", arg.DefaultValue );
+				}
+
+				return string.Format( "[{0}]", desc );
+			}
 		}
 
 		private string ExtractValueFromArg( string arg )
@@ -362,6 +476,27 @@ namespace DotArgs
 			}
 
 			return arg.Substring( 0, end );
+		}
+
+		private string GetArgumentInfo( Argument arg )
+		{
+			string str = "";
+
+			if( arg.IsRequired )
+			{
+				str = "Required";
+			}
+			else
+			{
+				str = "Optional";
+
+				if( arg.DefaultValue != null )
+				{
+					str += string.Format( ", Default value: {0}", arg.DefaultValue );
+				}
+			}
+
+			return str;
 		}
 
 		private void Reset()
@@ -433,24 +568,16 @@ namespace DotArgs
 			return parts;
 		}
 
-		private bool Validate()
-		{
-			bool errors = false;
-			foreach( KeyValuePair<string, Argument> kvp in Arguments.Where( kvp => !( kvp.Value is AliasArgument ) ) )
-			{
-				Argument entry = kvp.Value;
-				if( !entry.Validate( entry.GetValue() ) )
-				{
-					errors = true;
-				}
-			}
-
-			return !errors;
-		}
-
-		/// <summary>The name of the application that will be displayed in the usage page.</summary>
+		/// <summary>Information about the application that will be displayed in the usage page.</summary>
 		/// <example>MyCoolProgram v1.2 Copyright (C) John Smith &lt;smith@example.com&gt;</example>
-		public string ApplicationName { get; set; }
+		public string ApplicationInfo { get; set; }
+
+		/// <summary>Name of the executeable that will be displayed in the usage page.</summary>
+		/// <remarks>
+		/// The default value for this is the name of the assembly containing the code that created
+		/// this object.
+		/// </remarks>
+		public string ExecuteableName { get; set; }
 
 		/// <summary>
 		/// The TextWriter that is used to write the output. The default value is to use <see cref="Console.Out"/>
@@ -458,6 +585,7 @@ namespace DotArgs
 		public TextWriter OutputWriter { get; set; }
 
 		private Dictionary<string, Argument> Arguments = new Dictionary<string, Argument>();
+		private Dictionary<string, string> Examples = new Dictionary<string, string>();
 	}
 
 	/// <summary>A simple argument flag.</summary>
@@ -497,6 +625,17 @@ namespace DotArgs
 		}
 	}
 
+	/// <summary>
+	/// Helper class that offers a somewhat elegant solution for the problem of wanting to have an
+	/// "optional out" parameter for a method.
+	/// </summary>
+	/// <typeparam name="TResult">Type of the out parameter.</typeparam>
+	public class OptionalOut<TResult>
+	{
+		/// <summary>The actual value of the out parameter.</summary>
+		public TResult Result { get; set; }
+	}
+
 	/// <summary>An argument that can have any value.</summary>
 	/// <remarks>
 	/// An option can be specified by passing <c>-OPTION VALUE</c> , <c>-OPTION=VALUE</c> ,
@@ -511,6 +650,7 @@ namespace DotArgs
 		public OptionArgument( string defaultValue, bool required = false )
 			: base( defaultValue, required )
 		{
+			HelpPlaceholder = "OPTION";
 			NeedsValue = true;
 		}
 
@@ -530,14 +670,10 @@ namespace DotArgs
 		}
 	}
 
-	/// <summary>
-	/// A set argument is an option that 
-	/// </summary>
+	/// <summary>A set argument is an option that</summary>
 	public class SetArgument : OptionArgument
 	{
-		/// <summary>
-		/// Initializes a new instance of the <see cref="SetArgument"/> class.
-		/// </summary>
+		/// <summary>Initializes a new instance of the <see cref="SetArgument"/> class.</summary>
 		/// <param name="validOptions">The valid options this argument may be given.</param>
 		/// <param name="defaultValue">The default value.</param>
 		/// <param name="required">Flag indicating whether this argument is required.</param>
@@ -547,18 +683,16 @@ namespace DotArgs
 			ValidOptions = validOptions;
 		}
 
-		/// <summary>
-		/// Validates the specified value.
-		/// </summary>
+		/// <summary>Validates the specified value.</summary>
 		/// <param name="value">The value to validate.</param>
 		/// <returns>
-		///   <c>true</c> if <paramref name="value" /> is valid; otherwise <c>false</c> .
+		/// <c>true</c> if <paramref name="value"/> is valid; otherwise <c>false</c> .
 		/// </returns>
 		protected internal override bool Validate( object value )
 		{
 			return ValidOptions.Contains( value as string );
 		}
 
-		string[] ValidOptions;
+		private string[] ValidOptions;
 	}
 }

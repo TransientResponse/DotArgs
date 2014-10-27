@@ -2,7 +2,7 @@
 using System.Linq;
 using MSAssert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
 
-namespace DotArgsTest
+namespace DotArgsTests
 {
 	/// <summary>
 	/// Helper class for testing methods that should throw exception. This class can do more than
