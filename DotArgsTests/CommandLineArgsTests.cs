@@ -136,6 +136,61 @@ namespace DotArgsTests
 		}
 
 		[TestMethod]
+		public void HelpArgumentTest()
+		{
+			CommandLineArgs args = new CommandLineArgs();
+			args.RegisterHelpArgument();
+
+			Assert.IsTrue( args.Validate( "/help" ) );
+			Assert.IsTrue( args.GetValue<bool>( "help" ) );
+
+			using( StringWriter writer = new StringWriter() )
+			{
+				args.OutputWriter = writer;
+				args.Process();
+
+				Assert.IsFalse( string.IsNullOrWhiteSpace( writer.ToString() ) );
+			}
+		}
+
+		[TestMethod]
+		public void HelpPageExampleTest()
+		{
+			CommandLineArgs args = new CommandLineArgs();
+			args.ApplicationInfo = "MyCoolProgram v1.2 Copyright (C) John Smith <smith@example.com>";
+			args.AddExample( "example 1", "/flag /option=1" );
+			args.AddExample( "great example", "/flag2" );
+			args.AddExample( "example 2", "/option=222" );
+
+			using( TextWriter writer = new StringWriter() )
+			{
+				args.OutputWriter = writer;
+
+				args.PrintHelp();
+
+				StringBuilder sb = new StringBuilder();
+				sb.AppendLine( args.ApplicationInfo );
+				sb.AppendLine();
+				sb.AppendLine( "Usage:" );
+				sb.AppendFormat( "DotArgsTests " );
+				sb.AppendLine();
+				sb.AppendLine();
+				sb.AppendLine( "Examples:" );
+				sb.AppendLine();
+				sb.AppendLine( "example 1" );
+				sb.AppendLine( "/flag /option=1" );
+				sb.AppendLine();
+				sb.AppendLine( "example 2" );
+				sb.AppendLine( "/option=222" );
+				sb.AppendLine();
+				sb.AppendLine( "great example" );
+				sb.AppendLine( "/flag2" );
+
+				Assert.AreEqual( sb.ToString(), writer.ToString() );
+			}
+		}
+
+		[TestMethod]
 		public void OptionTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
@@ -175,6 +230,70 @@ namespace DotArgsTests
 
 			Assert.IsTrue( args.Validate( "-option:42 /option=444" ) );
 			Assert.AreEqual( "444", args.GetValue<string>( "option" ) );
+		}
+
+		[TestMethod]
+		public void PrintHelpTest()
+		{
+			CommandLineArgs args = new CommandLineArgs();
+			args.ApplicationInfo = "MyCoolProgram v1.2 Copyright (C) John Smith <smith@example.com>";
+
+			args.RegisterArgument( "flag", new FlagArgument( true, true ) { HelpMessage = "This is a flag." } );
+			args.RegisterArgument( "option", new OptionArgument( "123", false ) { HelpMessage = "This is an option." } );
+
+			using( TextWriter writer = new StringWriter() )
+			{
+				args.OutputWriter = writer;
+
+				args.PrintHelp();
+
+				StringBuilder sb = new StringBuilder();
+				sb.AppendLine( args.ApplicationInfo );
+				sb.AppendLine();
+				sb.AppendLine( "Usage:" );
+				sb.AppendFormat( "DotArgsTests </flag> [/option=OPTION, 123]" );
+				sb.AppendLine();
+				sb.AppendLine();
+				sb.AppendFormat( "{0,-10}{1}", "flag", "This is a flag." );
+				sb.AppendLine();
+				sb.AppendFormat( "{0,-10}Required", "" );
+				sb.AppendLine();
+				sb.AppendLine();
+				sb.AppendFormat( "{0,-10}{1}", "option", "This is an option." );
+				sb.AppendLine();
+				sb.AppendFormat( "{0,-10}Optional, Default value: 123", "" );
+				sb.AppendLine();
+
+				Assert.AreEqual( sb.ToString(), writer.ToString() );
+			}
+
+			using( TextWriter writer = new StringWriter() )
+			{
+				args.OutputWriter = writer;
+
+				args.PrintHelp( "This is an error" );
+
+				StringBuilder sb = new StringBuilder();
+				sb.AppendLine( args.ApplicationInfo );
+				sb.AppendLine();
+				sb.AppendLine( "This is an error" );
+				sb.AppendLine();
+				sb.AppendLine( "Usage:" );
+				sb.AppendFormat( "DotArgsTests </flag> [/option=OPTION, 123]" );
+				sb.AppendLine();
+				sb.AppendLine();
+				sb.AppendFormat( "{0,-10}{1}", "flag", "This is a flag." );
+				sb.AppendLine();
+				sb.AppendFormat( "{0,-10}Required", "" );
+				sb.AppendLine();
+				sb.AppendLine();
+				sb.AppendFormat( "{0,-10}{1}", "option", "This is an option." );
+				sb.AppendLine();
+				sb.AppendFormat( "{0,-10}Optional, Default value: 123", "" );
+				sb.AppendLine();
+
+				Assert.AreEqual( sb.ToString(), writer.ToString() );
+			}
 		}
 
 		[TestMethod]
@@ -219,107 +338,6 @@ namespace DotArgsTests
 		}
 
 		[TestMethod]
-		public void HelpPageExampleTest()
-		{
-			CommandLineArgs args = new CommandLineArgs();
-			args.ApplicationInfo = "MyCoolProgram v1.2 Copyright (C) John Smith <smith@example.com>";
-			args.AddExample( "example 1", "/flag /option=1" );
-			args.AddExample( "great example", "/flag2" );
-			args.AddExample( "example 2", "/option=222" );
-
-			using( TextWriter writer = new StringWriter() )
-			{
-				args.OutputWriter = writer;
-
-				args.PrintHelp();
-
-				StringBuilder sb = new StringBuilder();
-				sb.AppendLine( args.ApplicationInfo );
-				sb.AppendLine();
-				sb.AppendLine( "Usage:" );
-				sb.AppendFormat( "DotArgsTests " );
-				sb.AppendLine();
-				sb.AppendLine();
-				sb.AppendLine( "Examples:" );
-				sb.AppendLine();
-				sb.AppendLine( "example 1" );
-				sb.AppendLine( "/flag /option=1" );
-				sb.AppendLine();
-				sb.AppendLine( "example 2" );
-				sb.AppendLine( "/option=222" );
-				sb.AppendLine();
-				sb.AppendLine( "great example" );
-				sb.AppendLine( "/flag2" );
-
-				Assert.AreEqual( sb.ToString(), writer.ToString() );
-			}
-		}
-
-		[TestMethod]
-		public void PrintHelpTest()
-		{
-			CommandLineArgs args = new CommandLineArgs();
-			args.ApplicationInfo = "MyCoolProgram v1.2 Copyright (C) John Smith <smith@example.com>";
-
-			args.RegisterArgument( "flag", new FlagArgument(true, true) { HelpMessage = "This is a flag." } );
-			args.RegisterArgument( "option", new OptionArgument("123", false) { HelpMessage = "This is an option." } );
-
-			using( TextWriter writer = new StringWriter() )
-			{
-				args.OutputWriter = writer;
-
-				args.PrintHelp();
-
-				StringBuilder sb = new StringBuilder();
-				sb.AppendLine( args.ApplicationInfo );
-				sb.AppendLine();
-				sb.AppendLine( "Usage:" );
-				sb.AppendFormat( "DotArgsTests </flag> [/option=OPTION, 123]" );
-				sb.AppendLine();
-				sb.AppendLine();
-				sb.AppendFormat( "{0,-10}{1}", "flag", "This is a flag." );
-				sb.AppendLine();
-				sb.AppendFormat( "{0,-10}Required", "" );
-				sb.AppendLine();
-				sb.AppendLine();
-				sb.AppendFormat( "{0,-10}{1}", "option", "This is an option." );
-				sb.AppendLine();
-				sb.AppendFormat( "{0,-10}Optional, Default value: 123", "" );
-				sb.AppendLine();
-
-				Assert.AreEqual( sb.ToString(), writer.ToString() );
-			}
-
-			using( TextWriter writer = new StringWriter() )
-			{
-				args.OutputWriter = writer;
-
-				args.PrintHelp( "This is an error");
-
-				StringBuilder sb = new StringBuilder();
-				sb.AppendLine( args.ApplicationInfo );
-				sb.AppendLine();
-				sb.AppendLine( "This is an error" );
-				sb.AppendLine();
-				sb.AppendLine( "Usage:" );
-				sb.AppendFormat( "DotArgsTests </flag> [/option=OPTION, 123]" );
-				sb.AppendLine();
-				sb.AppendLine();
-				sb.AppendFormat( "{0,-10}{1}", "flag", "This is a flag." );
-				sb.AppendLine();
-				sb.AppendFormat( "{0,-10}Required", "" );
-				sb.AppendLine();
-				sb.AppendLine();
-				sb.AppendFormat( "{0,-10}{1}", "option", "This is an option." );
-				sb.AppendLine();
-				sb.AppendFormat( "{0,-10}Optional, Default value: 123", "" );
-				sb.AppendLine();
-
-				Assert.AreEqual( sb.ToString(), writer.ToString() );
-			}
-		}
-
-		[TestMethod]
 		public void SplitCommandLineTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
@@ -345,12 +363,36 @@ namespace DotArgsTests
 		}
 
 		[TestMethod]
-		public void ValidateFlagTest()
+		public void ValidateTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
 			args.RegisterArgument( "flag", new FlagArgument( true, true ) );
 
 			Assert.IsFalse( args.Validate( string.Empty ) );
+
+			args = new CommandLineArgs();
+			args.RegisterHelpArgument();
+			args.RegisterArgument( "flag", new FlagArgument() );
+
+			Assert.IsTrue( args.Validate( new[] { "/help", "/flag" } ) );
+
+			Assert.IsTrue( args.GetValue<bool>( "help" ) );
+			Assert.IsTrue( args.GetValue<bool>( "flag" ) );
+
+			OptionalOut<string[]> outErrors = new OptionalOut<string[]>();
+			Assert.IsFalse( args.Validate( "/unknown", outErrors ) );
+
+			Assert.AreEqual( 1, outErrors.Result.Length );
+			Assert.AreEqual( "Unknown option: 'unknown'", outErrors.Result[0] );
+
+			args.RegisterArgument( "option", new OptionArgument( null ) );
+			Assert.IsFalse( args.Validate( "/option", outErrors ) );
+			Assert.AreEqual( 1, outErrors.Result.Length );
+			Assert.AreEqual( "Missing value for option 'option'", outErrors.Result[0] );
+
+			Assert.IsFalse( args.Validate( "/option /flag", outErrors ) );
+			Assert.AreEqual( 1, outErrors.Result.Length );
+			Assert.AreEqual( "Missing value for option 'option'", outErrors.Result[0] );
 		}
 	}
 }

@@ -193,6 +193,14 @@ namespace DotArgs
 			ExecuteableName = Path.GetFileNameWithoutExtension( Assembly.GetCallingAssembly().Location );
 		}
 
+		/// <summary>Adds an example that will be displayed on the help page.</summary>
+		/// <param name="description">The name or description for this example.</param>
+		/// <param name="commandLine">The command line to display for this example.</param>
+		public void AddExample( string description, string commandLine )
+		{
+			Examples.Add( description, commandLine );
+		}
+
 		/// <summary>Gets the value of an argument.</summary>
 		/// <param name="name">Name of the argument to read.</param>
 		/// <returns>
@@ -213,16 +221,6 @@ namespace DotArgs
 			return (T)entry.GetValue();
 		}
 
-		/// <summary>
-		/// Adds an example that will be displayed on the help page.
-		/// </summary>
-		/// <param name="description">The name or description for this example.</param>
-		/// <param name="commandLine">The command line to display for this example.</param>
-		public void AddExample( string description, string commandLine  )
-		{
-			Examples.Add( description, commandLine );
-		}
-
 		/// <summary>Prints a help message describing the effects of all available options.</summary>
 		/// <param name="errorMessage">Optional error message to display.</param>
 		public void PrintHelp( string errorMessage = null )
@@ -231,7 +229,7 @@ namespace DotArgs
 
 			OutputWriter.WriteLine( ApplicationInfo );
 			OutputWriter.WriteLine();
-			if( !string.IsNullOrWhiteSpace(errorMessage))
+			if( !string.IsNullOrWhiteSpace( errorMessage ) )
 			{
 				OutputWriter.WriteLine( errorMessage );
 				OutputWriter.WriteLine();
@@ -251,7 +249,7 @@ namespace DotArgs
 				OutputWriter.WriteLine();
 				OutputWriter.WriteLine( "Examples:" );
 
-				foreach( KeyValuePair<string,string> kvp in Examples.OrderBy( k => k.Key ))
+				foreach( KeyValuePair<string, string> kvp in Examples.OrderBy( k => k.Key ) )
 				{
 					OutputWriter.WriteLine();
 					OutputWriter.WriteLine( kvp.Key );
@@ -303,7 +301,7 @@ namespace DotArgs
 		/// Registers a help argument that will display the help page for the program if set by the user.
 		/// </summary>
 		/// <param name="name">Name of the flag. The default value is "help".</param>
-		public void RegisterHelpArgument( string name = "help")
+		public void RegisterHelpArgument( string name = "help" )
 		{
 			FlagArgument arg = new FlagArgument();
 			arg.Processor = ( v ) => PrintHelp();
@@ -323,7 +321,7 @@ namespace DotArgs
 		/// <c>true</c> if the arguments in <paramref name="args"/> are valid; otherwise
 		/// <c>false</c> .
 		/// </returns>
-		public bool Validate( string[] args, OptionalOut<string> outErrors = null )
+		public bool Validate( string[] args, OptionalOut<string[]> outErrors = null )
 		{
 			return Validate( string.Join( " ", args ), outErrors );
 		}
@@ -339,7 +337,7 @@ namespace DotArgs
 		/// <c>true</c> if the arguments in <paramref name="args"/> are valid; otherwise
 		/// <c>false</c> .
 		/// </returns>
-		public bool Validate( string args, OptionalOut<string> outErrors = null )
+		public bool Validate( string args, OptionalOut<string[]> outErrors = null )
 		{
 			Reset();
 
@@ -352,7 +350,7 @@ namespace DotArgs
 				string arg = GetArgName( parts[i] );
 				if( !Arguments.ContainsKey( arg ) )
 				{
-					errorList.Add( string.Format( "Unknown option: {0}", parts[i] ) );
+					errorList.Add( string.Format( "Unknown option: '{0}'", arg ) );
 
 					errors = true;
 					continue;
@@ -369,8 +367,15 @@ namespace DotArgs
 					if( value == null && i < parts.Count - 1 )
 					{
 						value = parts[i + 1];
-						i++;
-						// TODO: Check if value is not a flag/option/whatever
+
+						if( Arguments.ContainsKey( GetArgName( value ) ) )
+						{
+							value = null;
+						}
+						else
+						{
+							i++;
+						}
 					}
 
 					if( value != null )
@@ -380,7 +385,7 @@ namespace DotArgs
 					else
 					{
 						// Missing argument
-						errorList.Add( string.Format( "Missing value for {0}", arg ) );
+						errorList.Add( string.Format( "Missing value for option '{0}'", arg ) );
 						errors = true;
 					}
 				}
@@ -402,7 +407,7 @@ namespace DotArgs
 
 			if( outErrors != null )
 			{
-				outErrors.Result = string.Join( Environment.NewLine, errorList );
+				outErrors.Result = errorList.ToArray();
 			}
 
 			return !errors;
