@@ -34,6 +34,31 @@ namespace DotArgsTests
 		}
 
 		[TestMethod]
+		public void DefaultArgumentTest()
+		{
+			CommandLineArgs args = new CommandLineArgs();
+			args.RegisterArgument( "default", new OptionArgument( null, true ) );
+			args.SetDefaultArgument( "default" );
+
+			Assert.IsTrue( args.Validate( "value" ) );
+			Assert.AreEqual( "value", args.GetValue<string>( "default" ) );
+
+			args.RegisterArgument( "flag", new FlagArgument( false, true ) );
+
+			Assert.IsTrue( args.Validate( "value /flag" ) );
+			Assert.AreEqual( "value", args.GetValue<string>( "default" ) );
+			Assert.AreEqual( true, args.GetValue<bool>( "flag" ) );
+
+			Assert.IsTrue( args.Validate( "/flag value" ) );
+			Assert.AreEqual( "value", args.GetValue<string>( "default" ) );
+			Assert.AreEqual( true, args.GetValue<bool>( "flag" ) );
+
+			Assert.IsTrue( args.Validate( "/flag flag" ) );
+			Assert.AreEqual( "flag", args.GetValue<string>( "default" ) );
+			Assert.AreEqual( true, args.GetValue<bool>( "flag" ) );
+		}
+
+		[TestMethod]
 		public void CollectionTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
@@ -393,6 +418,12 @@ namespace DotArgsTests
 			Assert.IsFalse( args.Validate( "/option /flag", outErrors ) );
 			Assert.AreEqual( 1, outErrors.Result.Length );
 			Assert.AreEqual( "Missing value for option 'option'", outErrors.Result[0] );
+
+			args = new CommandLineArgs();
+			args.RegisterArgument( "option", new OptionArgument( null, true ) );
+
+			Assert.IsFalse( args.Validate( "" ) );
+			Assert.IsTrue( args.Validate( "/option=value" ) );
 		}
 	}
 }

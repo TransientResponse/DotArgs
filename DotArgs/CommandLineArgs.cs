@@ -87,6 +87,11 @@ namespace DotArgs
 		{
 			DefaultValue = defaultValue;
 			IsRequired = required;
+
+			if( IsRequired )
+			{
+				DefaultValue = null;
+			}
 		}
 
 		/// <summary>Gets the value of this argument.</summary>
@@ -199,6 +204,20 @@ namespace DotArgs
 		public void AddExample( string description, string commandLine )
 		{
 			Examples.Add( description, commandLine );
+		}
+
+		/// <summary>
+		/// Sets the default argument that will be filled when no argument name is given.
+		/// </summary>
+		/// <param name="argument">Name of the argument to use as the default.</param>
+		public void SetDefaultArgument( string argument )
+		{
+			if( !Arguments.ContainsKey( argument ) )
+			{
+				throw new ArgumentException( string.Format( "Argument {0} was not registered", argument ), "argument" );
+			}
+
+			DefaultArgument = argument;
 		}
 
 		/// <summary>Gets the value of an argument.</summary>
@@ -341,6 +360,7 @@ namespace DotArgs
 		{
 			Reset();
 
+			bool handledDefault = false;
 			bool errors = false;
 			List<string> errorList = new List<string>();
 
@@ -350,10 +370,20 @@ namespace DotArgs
 				string arg = GetArgName( parts[i] );
 				if( !Arguments.ContainsKey( arg ) )
 				{
-					errorList.Add( string.Format( "Unknown option: '{0}'", arg ) );
+					if( DefaultArgument != null && !handledDefault )
+					{
+						parts[i] = string.Format( "/{0}={1}", DefaultArgument, arg );
+						arg = DefaultArgument;
 
-					errors = true;
-					continue;
+						handledDefault = true;
+					}
+					else
+					{
+						errorList.Add( string.Format( "Unknown option: '{0}'", arg ) );
+
+						errors = true;
+						continue;
+					}
 				}
 
 				Argument entry = Arguments[arg];
@@ -398,16 +428,24 @@ namespace DotArgs
 			foreach( KeyValuePair<string, Argument> kvp in Arguments )
 			{
 				Argument entry = kvp.Value;
-				if( !entry.Validate( entry.GetValue() ) )
+				object value = entry.GetValue();
+
+				if( entry.IsRequired && value == null )
 				{
-					errorList.Add( string.Format( "{0}: Invalid value {1}", kvp.Key, entry.GetValue() ) );
+					errorList.Add( string.Format( "Missing value for option '{0}'", kvp.Key ) );
+					errors = true;
+				}
+
+				if( !entry.Validate( value ) )
+				{
+					errorList.Add( string.Format( "{0}: Invalid value {1}", kvp.Key, value ) );
 					errors = true;
 				}
 			}
 
 			if( outErrors != null )
 			{
-				outErrors.Result = errorList.ToArray();
+				outErrors.Result = errorList.Distinct().ToArray();
 			}
 
 			return !errors;
@@ -591,6 +629,7 @@ namespace DotArgs
 
 		private Dictionary<string, Argument> Arguments = new Dictionary<string, Argument>();
 		private Dictionary<string, string> Examples = new Dictionary<string, string>();
+		private string DefaultArgument = null;
 	}
 
 	/// <summary>A simple argument flag.</summary>
