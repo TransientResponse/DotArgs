@@ -206,20 +206,6 @@ namespace DotArgs
 			Examples.Add( description, commandLine );
 		}
 
-		/// <summary>
-		/// Sets the default argument that will be filled when no argument name is given.
-		/// </summary>
-		/// <param name="argument">Name of the argument to use as the default.</param>
-		public void SetDefaultArgument( string argument )
-		{
-			if( !Arguments.ContainsKey( argument ) )
-			{
-				throw new ArgumentException( string.Format( "Argument {0} was not registered", argument ), "argument" );
-			}
-
-			DefaultArgument = argument;
-		}
-
 		/// <summary>Gets the value of an argument.</summary>
 		/// <param name="name">Name of the argument to read.</param>
 		/// <returns>
@@ -329,6 +315,20 @@ namespace DotArgs
 			RegisterArgument( name, arg );
 		}
 
+		/// <summary>
+		/// Sets the default argument that will be filled when no argument name is given.
+		/// </summary>
+		/// <param name="argument">Name of the argument to use as the default.</param>
+		public void SetDefaultArgument( string argument )
+		{
+			if( !Arguments.ContainsKey( argument ) )
+			{
+				throw new ArgumentException( string.Format( "Argument {0} was not registered", argument ), "argument" );
+			}
+
+			DefaultArgument = argument;
+		}
+
 		/// <summary>Processes a set of command line arguments.</summary>
 		/// <param name="args">
 		/// Command line arguments to process. This is usally coming from your Main method.
@@ -368,6 +368,17 @@ namespace DotArgs
 			for( int i = 0; i < parts.Count; ++i )
 			{
 				string arg = GetArgName( parts[i] );
+				if( !IsArgumentName( parts[i] ) )
+				{
+					if( !handledDefault )
+					{
+						parts[i] = string.Format( "/{0}={1}", DefaultArgument, arg );
+						arg = DefaultArgument;
+
+						handledDefault = true;
+					}
+				}
+
 				if( !Arguments.ContainsKey( arg ) )
 				{
 					if( DefaultArgument != null && !handledDefault )
@@ -388,7 +399,6 @@ namespace DotArgs
 
 				Argument entry = Arguments[arg];
 
-				// Simple case: a flag
 				if( entry.NeedsValue )
 				{
 					// Not so simple cases: Collection and Option
@@ -419,7 +429,7 @@ namespace DotArgs
 						errors = true;
 					}
 				}
-				else
+				else // Simple case: a flag
 				{
 					entry.SetValue( true );
 				}
@@ -542,6 +552,21 @@ namespace DotArgs
 			return str;
 		}
 
+		private bool IsArgumentName( string arg )
+		{
+			char[] prefixes = new[] { '-', '/' };
+
+			foreach( char p in prefixes )
+			{
+				if( arg.StartsWith( p.ToString() ) )
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		private void Reset()
 		{
 			foreach( Argument entry in Arguments.Values )
@@ -628,8 +653,8 @@ namespace DotArgs
 		public TextWriter OutputWriter { get; set; }
 
 		private Dictionary<string, Argument> Arguments = new Dictionary<string, Argument>();
-		private Dictionary<string, string> Examples = new Dictionary<string, string>();
 		private string DefaultArgument = null;
+		private Dictionary<string, string> Examples = new Dictionary<string, string>();
 	}
 
 	/// <summary>A simple argument flag.</summary>

@@ -34,31 +34,6 @@ namespace DotArgsTests
 		}
 
 		[TestMethod]
-		public void DefaultArgumentTest()
-		{
-			CommandLineArgs args = new CommandLineArgs();
-			args.RegisterArgument( "default", new OptionArgument( null, true ) );
-			args.SetDefaultArgument( "default" );
-
-			Assert.IsTrue( args.Validate( "value" ) );
-			Assert.AreEqual( "value", args.GetValue<string>( "default" ) );
-
-			args.RegisterArgument( "flag", new FlagArgument( false, true ) );
-
-			Assert.IsTrue( args.Validate( "value /flag" ) );
-			Assert.AreEqual( "value", args.GetValue<string>( "default" ) );
-			Assert.AreEqual( true, args.GetValue<bool>( "flag" ) );
-
-			Assert.IsTrue( args.Validate( "/flag value" ) );
-			Assert.AreEqual( "value", args.GetValue<string>( "default" ) );
-			Assert.AreEqual( true, args.GetValue<bool>( "flag" ) );
-
-			Assert.IsTrue( args.Validate( "/flag flag" ) );
-			Assert.AreEqual( "flag", args.GetValue<string>( "default" ) );
-			Assert.AreEqual( true, args.GetValue<bool>( "flag" ) );
-		}
-
-		[TestMethod]
 		public void CollectionTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
@@ -89,6 +64,31 @@ namespace DotArgsTests
 
 			Assert.IsFalse( args.Validate( "/option=123" ) );
 			Assert.IsTrue( args.Validate( "/option=test" ) );
+		}
+
+		[TestMethod]
+		public void DefaultArgumentTest()
+		{
+			CommandLineArgs args = new CommandLineArgs();
+			args.RegisterArgument( "default", new OptionArgument( null, true ) );
+			args.SetDefaultArgument( "default" );
+
+			Assert.IsTrue( args.Validate( "value" ) );
+			Assert.AreEqual( "value", args.GetValue<string>( "default" ) );
+
+			args.RegisterArgument( "flag", new FlagArgument( false, true ) );
+
+			Assert.IsTrue( args.Validate( "value /flag" ) );
+			Assert.AreEqual( "value", args.GetValue<string>( "default" ) );
+			Assert.AreEqual( true, args.GetValue<bool>( "flag" ) );
+
+			Assert.IsTrue( args.Validate( "/flag value" ) );
+			Assert.AreEqual( "value", args.GetValue<string>( "default" ) );
+			Assert.AreEqual( true, args.GetValue<bool>( "flag" ) );
+
+			Assert.IsTrue( args.Validate( "/flag flag" ) );
+			Assert.AreEqual( "flag", args.GetValue<string>( "default" ) );
+			Assert.AreEqual( true, args.GetValue<bool>( "flag" ) );
 		}
 
 		[TestMethod]
@@ -255,6 +255,47 @@ namespace DotArgsTests
 
 			Assert.IsTrue( args.Validate( "-option:42 /option=444" ) );
 			Assert.AreEqual( "444", args.GetValue<string>( "option" ) );
+		}
+
+		[TestMethod, TestCategory( "RealWorldExamples" )]
+		public void PingTest()
+		{
+			CommandLineArgs args = new CommandLineArgs();
+			args.RegisterArgument( "target_name", new OptionArgument( null, true ) );
+			args.RegisterArgument( "t", new FlagArgument( false, false ) );
+			args.RegisterArgument( "4", new FlagArgument( false, false ) );
+			args.RegisterArgument( "6", new FlagArgument( false, false ) );
+			args.SetDefaultArgument( "target_name" );
+
+			Assert.IsTrue( args.Validate( "localhost" ) );
+			Assert.AreEqual( "localhost", args.GetValue<string>( "target_name" ) );
+			Assert.IsFalse( args.GetValue<bool>( "4" ) );
+			Assert.IsFalse( args.GetValue<bool>( "6" ) );
+			Assert.IsFalse( args.GetValue<bool>( "t" ) );
+
+			Assert.IsTrue( args.Validate( "localhost -t" ) );
+			Assert.AreEqual( "localhost", args.GetValue<string>( "target_name" ) );
+			Assert.IsFalse( args.GetValue<bool>( "4" ) );
+			Assert.IsFalse( args.GetValue<bool>( "6" ) );
+			Assert.IsTrue( args.GetValue<bool>( "t" ) );
+
+			Assert.IsTrue( args.Validate( "localhost -4" ) );
+			Assert.AreEqual( "localhost", args.GetValue<string>( "target_name" ) );
+			Assert.IsTrue( args.GetValue<bool>( "4" ) );
+			Assert.IsFalse( args.GetValue<bool>( "6" ) );
+			Assert.IsFalse( args.GetValue<bool>( "t" ) );
+
+			Assert.IsTrue( args.Validate( "localhost -6" ) );
+			Assert.AreEqual( "localhost", args.GetValue<string>( "target_name" ) );
+			Assert.IsFalse( args.GetValue<bool>( "4" ) );
+			Assert.IsTrue( args.GetValue<bool>( "6" ) );
+			Assert.IsFalse( args.GetValue<bool>( "t" ) );
+
+			Assert.IsTrue( args.Validate( "localhost -6 -t" ) );
+			Assert.AreEqual( "localhost", args.GetValue<string>( "target_name" ) );
+			Assert.IsFalse( args.GetValue<bool>( "4" ) );
+			Assert.IsTrue( args.GetValue<bool>( "6" ) );
+			Assert.IsTrue( args.GetValue<bool>( "t" ) );
 		}
 
 		[TestMethod]
