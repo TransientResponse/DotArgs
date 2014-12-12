@@ -13,7 +13,12 @@ Features
 
 Installation
 =======
-Simply add the CommandLineArgs.cs file to your project. Now you can use the library.
+You can install DotArgs using Nuget:
+> Install-Package DotArgs
+
+This will add a file "CommandLineArgs.cs" to your project and you are good to go.
+
+If you want to install the library by hand simply add the CommandLineArgs.cs file to your project. Now you can use the library.
 Of course you can add a reference to the generated assembly to your project if you really want to.
 
 Examples
@@ -31,5 +36,5 @@ ToDos
 - [x] General parsing and validating of command lines
 - [x] Auto help page generation
 - [ ] Examples
-- [ ] Release as nuget "Package"
+- [x] Release as nuget "Package"
 - [ ] Auto populate object based on attributes
