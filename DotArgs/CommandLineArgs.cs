@@ -72,6 +72,11 @@ namespace DotArgs
 		/// </summary>
 		public new bool IsRequired { get { return Reference.IsRequired; } }
 
+		/// <summary>
+		/// Flag indicating whether multplie calls to <see cref="SetValue" /> will add a value or overwrite the existing one.
+		/// </summary>
+		public new bool SupportsMultipleValues { get { return Reference.SupportsMultipleValues; } }
+
 		private Argument Reference;
 	}
 
@@ -87,6 +92,7 @@ namespace DotArgs
 		{
 			DefaultValue = defaultValue;
 			IsRequired = required;
+			SupportsMultipleValues = false;
 
 			if( IsRequired )
 			{
@@ -147,6 +153,11 @@ namespace DotArgs
 		/// <summary>A method that can be executed when the command line arguments are processed.</summary>
 		public Action<object> Processor { get; set; }
 
+		/// <summary>
+		/// Flag indicating whether multplie calls to <see cref="SetValue"/> will add a value or overwrite the existing one.
+		/// </summary>
+		public bool SupportsMultipleValues { get; protected set; }
+
 		/// <summary>A method that can be used to validate a value for this argument.</summary>
 		public Func<object, bool> Validator { get; set; }
 
@@ -161,6 +172,7 @@ namespace DotArgs
 		public CollectionArgument( bool required = false )
 			: base( null, required )
 		{
+			SupportsMultipleValues = true;
 			HelpPlaceholder = "COLLECTION";
 			base.SetValue( new string[0] );
 		}
@@ -360,6 +372,12 @@ namespace DotArgs
 		{
 			Reset();
 
+			bool ignoreAlreadyHandled = false;
+			if( DefaultArgument != null )
+			{
+				ignoreAlreadyHandled = Arguments[DefaultArgument].SupportsMultipleValues;
+			}
+
 			bool handledDefault = false;
 			bool errors = false;
 			List<string> errorList = new List<string>();
@@ -370,7 +388,7 @@ namespace DotArgs
 				string arg = GetArgName( parts[i] );
 				if( !IsArgumentName( parts[i] ) )
 				{
-					if( !handledDefault )
+					if( !handledDefault || ignoreAlreadyHandled )
 					{
 						parts[i] = string.Format( "/{0}={1}", DefaultArgument, arg );
 						arg = DefaultArgument;
@@ -381,7 +399,7 @@ namespace DotArgs
 
 				if( !Arguments.ContainsKey( arg ) )
 				{
-					if( DefaultArgument != null && !handledDefault )
+					if( DefaultArgument != null && ( !handledDefault || ignoreAlreadyHandled ) )
 					{
 						parts[i] = string.Format( "/{0}={1}", DefaultArgument, arg );
 						arg = DefaultArgument;
@@ -739,7 +757,7 @@ namespace DotArgs
 		}
 	}
 
-	/// <summary>A set argument is an option that</summary>
+	/// <summary>A set argument is an option that only takes values from a predefined list.</summary>
 	public class SetArgument : OptionArgument
 	{
 		/// <summary>Initializes a new instance of the <see cref="SetArgument"/> class.</summary>

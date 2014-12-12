@@ -92,6 +92,29 @@ namespace DotArgsTests
 		}
 
 		[TestMethod]
+		public void DefaultCollectionTest()
+		{
+			CommandLineArgs args = new CommandLineArgs();
+			args.RegisterArgument( "default", new CollectionArgument( true ) );
+			args.RegisterArgument( "flag", new FlagArgument() );
+			args.SetDefaultArgument( "default" );
+
+			Assert.IsTrue( args.Validate( "test1 test2" ) );
+			string[] values = args.GetValue<string[]>( "default" );
+			CollectionAssert.AreEqual( new[] { "test1", "test2" }, values );
+
+			Assert.IsTrue( args.Validate( "test1 test2 /flag" ) );
+			values = args.GetValue<string[]>( "default" );
+			CollectionAssert.AreEqual( new[] { "test1", "test2" }, values );
+			Assert.IsTrue( args.GetValue<bool>( "flag" ) );
+
+			Assert.IsTrue( args.Validate( "/flag test1 test2" ) );
+			values = args.GetValue<string[]>( "default" );
+			CollectionAssert.AreEqual( new[] { "test1", "test2" }, values );
+			Assert.IsTrue( args.GetValue<bool>( "flag" ) );
+		}
+
+		[TestMethod]
 		public void FlagTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
