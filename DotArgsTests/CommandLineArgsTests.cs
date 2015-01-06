@@ -89,6 +89,11 @@ namespace DotArgsTests
 			Assert.IsTrue( args.Validate( "/flag flag" ) );
 			Assert.AreEqual( "flag", args.GetValue<string>( "default" ) );
 			Assert.AreEqual( true, args.GetValue<bool>( "flag" ) );
+
+			args = new CommandLineArgs();
+			args.RegisterArgument( "default", new OptionArgument( null, true ) );
+
+			Assert.IsFalse( args.Validate( "value" ) );
 		}
 
 		[TestMethod]
