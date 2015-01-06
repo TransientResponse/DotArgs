@@ -94,6 +94,8 @@ namespace DotArgsTests
 			args.RegisterArgument( "default", new OptionArgument( null, true ) );
 
 			Assert.IsFalse( args.Validate( "value" ) );
+
+			ExceptionAssert.Assert<ArgumentException>( () => args.SetDefaultArgument( "nonexisting" ) );
 		}
 
 		[TestMethod]
