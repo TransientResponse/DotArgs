@@ -387,6 +387,7 @@ namespace DotArgs
 			{
 				string arg = GetArgName( parts[i] );
 				if( !IsArgumentName( parts[i] ) )
+				if( !IsArgumentName( parts[i] ) && DefaultArgument != null )
 				{
 					if( !handledDefault || ignoreAlreadyHandled )
 					{
