@@ -72,6 +72,9 @@ namespace DotArgs
 		/// </summary>
 		public new bool IsRequired { get { return Reference.IsRequired; } }
 
+		/// <summary>Position this argument is expected to be located in the command line.</summary>
+		public new int? Position { get { return Reference.Position; } }
+
 		/// <summary>
 		/// Flag indicating whether multplie calls to <see cref="SetValue" /> will add a value or overwrite the existing one.
 		/// </summary>
@@ -88,11 +91,13 @@ namespace DotArgs
 		/// <summary>Initializes a new instance of the <see cref="Argument"/> class.</summary>
 		/// <param name="defaultValue">The default value.</param>
 		/// <param name="required">Flag indicating whether this argument is required.</param>
-		public Argument( object defaultValue, bool required = false )
+		/// <param name="position">Position this argument is expected to be located in the command line.</param>
+		public Argument( object defaultValue, bool required = false, int? position = null )
 		{
 			DefaultValue = defaultValue;
 			IsRequired = required;
 			SupportsMultipleValues = false;
+			Position = position;
 
 			if( IsRequired )
 			{
@@ -150,6 +155,9 @@ namespace DotArgs
 		/// <summary>Indicates whether this argument requires an explicit option.</summary>
 		public bool NeedsValue { get; protected set; }
 
+		/// <summary>Position this argument is expected to be located in the command line.</summary>
+		public int? Position { get; set; }
+
 		/// <summary>A method that can be executed when the command line arguments are processed.</summary>
 		public Action<object> Processor { get; set; }
 
@@ -169,8 +177,9 @@ namespace DotArgs
 	{
 		/// <summary>Initializes a new instance of the <see cref="CollectionArgument"/> class.</summary>
 		/// <param name="required">Flag indicating whether this argument is required.</param>
-		public CollectionArgument( bool required = false )
-			: base( null, required )
+		/// <param name="position">Position this argument is expected to be located in the command line.</param>
+		public CollectionArgument( bool required = false, int? position = null )
+			: base( null, required, position )
 		{
 			SupportsMultipleValues = true;
 			HelpPlaceholder = "COLLECTION";
@@ -386,14 +395,25 @@ namespace DotArgs
 			for( int i = 0; i < parts.Count; ++i )
 			{
 				string arg = GetArgName( parts[i] );
-				if( !IsArgumentName( parts[i] ) && DefaultArgument != null )
+				if( !IsArgumentName( parts[i] ) )
 				{
-					if( !handledDefault || ignoreAlreadyHandled )
+					Argument posArgument = GetArgumentForPosition( i );
+					if( posArgument != null )
 					{
-						parts[i] = string.Format( "/{0}={1}", DefaultArgument, arg );
-						arg = DefaultArgument;
+						string argName = GetNameForArgument( posArgument );
 
-						handledDefault = true;
+						parts[i] = string.Format( "/{0}={1}", argName, arg );
+						arg = argName;
+					}
+					else if( DefaultArgument != null )
+					{
+						if( !handledDefault || ignoreAlreadyHandled )
+						{
+							parts[i] = string.Format( "/{0}={1}", DefaultArgument, arg );
+							arg = DefaultArgument;
+
+							handledDefault = true;
+						}
 					}
 				}
 
@@ -549,6 +569,11 @@ namespace DotArgs
 			return arg.Substring( 0, end );
 		}
 
+		private Argument GetArgumentForPosition( int position )
+		{
+			return Arguments.Values.FirstOrDefault( a => a.Position.HasValue && a.Position.Value == position );
+		}
+
 		private string GetArgumentInfo( Argument arg )
 		{
 			string str = "";
@@ -568,6 +593,19 @@ namespace DotArgs
 			}
 
 			return str;
+		}
+
+		private string GetNameForArgument( Argument arg )
+		{
+			foreach( var kvp in Arguments )
+			{
+				if( kvp.Value == arg )
+				{
+					return kvp.Key;
+				}
+			}
+
+			return null;
 		}
 
 		private bool IsArgumentName( string arg )
@@ -685,8 +723,9 @@ namespace DotArgs
 		/// <summary>Initializes a new instance of the <see cref="FlagArgument"/> class.</summary>
 		/// <param name="defaultValue">The default value for this flag.</param>
 		/// <param name="required">Flag indicating whether this argument is required.</param>
-		public FlagArgument( bool defaultValue = false, bool required = false )
-			: base( defaultValue, required )
+		/// <param name="position">Position this argument is expected to be located in the command line.</param>
+		public FlagArgument( bool defaultValue = false, bool required = false, int? position = null )
+			: base( defaultValue, required, position )
 		{
 			if( IsRequired )
 			{
@@ -734,8 +773,9 @@ namespace DotArgs
 		/// <summary>Initializes a new instance of the <see cref="OptionArgument"/> class.</summary>
 		/// <param name="defaultValue">The default value.</param>
 		/// <param name="required">Flag indicating whether this argument is required.</param>
-		public OptionArgument( string defaultValue, bool required = false )
-			: base( defaultValue, required )
+		/// <param name="position">Position this argument is expected to be located in the command line.</param>
+		public OptionArgument( string defaultValue, bool required = false, int? position = null )
+			: base( defaultValue, required, position )
 		{
 			HelpPlaceholder = "OPTION";
 			NeedsValue = true;
@@ -764,8 +804,9 @@ namespace DotArgs
 		/// <param name="validOptions">The valid options this argument may be given.</param>
 		/// <param name="defaultValue">The default value.</param>
 		/// <param name="required">Flag indicating whether this argument is required.</param>
-		public SetArgument( string[] validOptions, string defaultValue, bool required = false )
-			: base( defaultValue, required )
+		/// <param name="position">Position this argument is expected to be located in the command line.</param>
+		public SetArgument( string[] validOptions, string defaultValue, bool required = false, int? position = null )
+			: base( defaultValue, required, position )
 		{
 			ValidOptions = validOptions;
 		}
