@@ -97,6 +97,7 @@ namespace DotArgs
 			DefaultValue = defaultValue;
 			IsRequired = required;
 			SupportsMultipleValues = false;
+			Position = position;
 
 			if( IsRequired )
 			{
@@ -395,14 +396,24 @@ namespace DotArgs
 			{
 				string arg = GetArgName( parts[i] );
 				if( !IsArgumentName( parts[i] ) )
-				if( !IsArgumentName( parts[i] ) && DefaultArgument != null )
 				{
-					if( !handledDefault || ignoreAlreadyHandled )
+					Argument posArgument = GetArgumentForPosition( i );
+					if( posArgument != null )
 					{
-						parts[i] = string.Format( "/{0}={1}", DefaultArgument, arg );
-						arg = DefaultArgument;
+						string argName = GetNameForArgument( posArgument );
 
-						handledDefault = true;
+						parts[i] = string.Format( "/{0}={1}", argName, arg );
+						arg = argName;
+					}
+					else if( DefaultArgument != null )
+					{
+						if( !handledDefault || ignoreAlreadyHandled )
+						{
+							parts[i] = string.Format( "/{0}={1}", DefaultArgument, arg );
+							arg = DefaultArgument;
+
+							handledDefault = true;
+						}
 					}
 				}
 
@@ -558,6 +569,11 @@ namespace DotArgs
 			return arg.Substring( 0, end );
 		}
 
+		private Argument GetArgumentForPosition( int position )
+		{
+			return Arguments.Values.FirstOrDefault( a => a.Position.HasValue && a.Position.Value == position );
+		}
+
 		private string GetArgumentInfo( Argument arg )
 		{
 			string str = "";
@@ -577,6 +593,19 @@ namespace DotArgs
 			}
 
 			return str;
+		}
+
+		private string GetNameForArgument( Argument arg )
+		{
+			foreach( var kvp in Arguments )
+			{
+				if( kvp.Value == arg )
+				{
+					return kvp.Key;
+				}
+			}
+
+			return null;
 		}
 
 		private bool IsArgumentName( string arg )
