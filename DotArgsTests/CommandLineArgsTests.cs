@@ -322,6 +322,44 @@ namespace DotArgsTests
 		}
 
 		[TestMethod]
+		public void PositionalArgumentsTest()
+		{
+			CommandLineArgs args = new CommandLineArgs();
+			args.RegisterArgument( "first", new OptionArgument( null, true, 0 ) );
+			args.RegisterArgument( "second", new OptionArgument( null, true, 1 ) );
+			args.RegisterArgument( "third", new OptionArgument( null, false, 2 ) );
+
+			Assert.IsFalse( args.Validate( "one" ) );
+
+			Assert.IsTrue( args.Validate( "one two" ) );
+			Assert.AreEqual( "one", args.GetValue<string>( "first" ) );
+			Assert.AreEqual( "two", args.GetValue<string>( "second" ) );
+			Assert.AreEqual( null, args.GetValue<string>( "third" ) );
+
+			Assert.IsTrue( args.Validate( "one two three" ) );
+			Assert.AreEqual( "one", args.GetValue<string>( "first" ) );
+			Assert.AreEqual( "two", args.GetValue<string>( "second" ) );
+			Assert.AreEqual( "three", args.GetValue<string>( "third" ) );
+
+			args.RegisterArgument( "flag", new FlagArgument() );
+			Assert.IsTrue( args.Validate( "one two three" ) );
+			Assert.AreEqual( false, args.GetValue<bool>( "flag" ) );
+
+			Assert.IsTrue( args.Validate( "one two three /flag" ) );
+			Assert.AreEqual( true, args.GetValue<bool>( "flag" ) );
+
+			args.RegisterArgument( "default", new OptionArgument( "def" ) );
+			args.SetDefaultArgument( "default" );
+			Assert.IsTrue( args.Validate( "one two three /flag zero" ) );
+			Assert.AreEqual( true, args.GetValue<bool>( "flag" ) );
+			Assert.AreEqual( "zero", args.GetValue<string>( "default" ) );
+
+			Assert.IsTrue( args.Validate( "one two three zero /flag" ) );
+			Assert.AreEqual( true, args.GetValue<bool>( "flag" ) );
+			Assert.AreEqual( "zero", args.GetValue<string>( "default" ) );
+		}
+
+		[TestMethod]
 		public void PrintHelpTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();

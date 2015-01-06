@@ -72,6 +72,9 @@ namespace DotArgs
 		/// </summary>
 		public new bool IsRequired { get { return Reference.IsRequired; } }
 
+		/// <summary>Position this argument is expected to be located in the command line.</summary>
+		public new int? Position { get { return Reference.Position; } }
+
 		/// <summary>
 		/// Flag indicating whether multplie calls to <see cref="SetValue" /> will add a value or overwrite the existing one.
 		/// </summary>
@@ -88,7 +91,8 @@ namespace DotArgs
 		/// <summary>Initializes a new instance of the <see cref="Argument"/> class.</summary>
 		/// <param name="defaultValue">The default value.</param>
 		/// <param name="required">Flag indicating whether this argument is required.</param>
-		public Argument( object defaultValue, bool required = false )
+		/// <param name="position">Position this argument is expected to be located in the command line.</param>
+		public Argument( object defaultValue, bool required = false, int? position = null )
 		{
 			DefaultValue = defaultValue;
 			IsRequired = required;
@@ -150,6 +154,9 @@ namespace DotArgs
 		/// <summary>Indicates whether this argument requires an explicit option.</summary>
 		public bool NeedsValue { get; protected set; }
 
+		/// <summary>Position this argument is expected to be located in the command line.</summary>
+		public int? Position { get; set; }
+
 		/// <summary>A method that can be executed when the command line arguments are processed.</summary>
 		public Action<object> Processor { get; set; }
 
@@ -169,8 +176,9 @@ namespace DotArgs
 	{
 		/// <summary>Initializes a new instance of the <see cref="CollectionArgument"/> class.</summary>
 		/// <param name="required">Flag indicating whether this argument is required.</param>
-		public CollectionArgument( bool required = false )
-			: base( null, required )
+		/// <param name="position">Position this argument is expected to be located in the command line.</param>
+		public CollectionArgument( bool required = false, int? position = null )
+			: base( null, required, position )
 		{
 			SupportsMultipleValues = true;
 			HelpPlaceholder = "COLLECTION";
@@ -685,8 +693,9 @@ namespace DotArgs
 		/// <summary>Initializes a new instance of the <see cref="FlagArgument"/> class.</summary>
 		/// <param name="defaultValue">The default value for this flag.</param>
 		/// <param name="required">Flag indicating whether this argument is required.</param>
-		public FlagArgument( bool defaultValue = false, bool required = false )
-			: base( defaultValue, required )
+		/// <param name="position">Position this argument is expected to be located in the command line.</param>
+		public FlagArgument( bool defaultValue = false, bool required = false, int? position = null )
+			: base( defaultValue, required, position )
 		{
 			if( IsRequired )
 			{
@@ -734,8 +743,9 @@ namespace DotArgs
 		/// <summary>Initializes a new instance of the <see cref="OptionArgument"/> class.</summary>
 		/// <param name="defaultValue">The default value.</param>
 		/// <param name="required">Flag indicating whether this argument is required.</param>
-		public OptionArgument( string defaultValue, bool required = false )
-			: base( defaultValue, required )
+		/// <param name="position">Position this argument is expected to be located in the command line.</param>
+		public OptionArgument( string defaultValue, bool required = false, int? position = null )
+			: base( defaultValue, required, position )
 		{
 			HelpPlaceholder = "OPTION";
 			NeedsValue = true;
@@ -764,8 +774,9 @@ namespace DotArgs
 		/// <param name="validOptions">The valid options this argument may be given.</param>
 		/// <param name="defaultValue">The default value.</param>
 		/// <param name="required">Flag indicating whether this argument is required.</param>
-		public SetArgument( string[] validOptions, string defaultValue, bool required = false )
-			: base( defaultValue, required )
+		/// <param name="position">Position this argument is expected to be located in the command line.</param>
+		public SetArgument( string[] validOptions, string defaultValue, bool required = false, int? position = null )
+			: base( defaultValue, required, position )
 		{
 			ValidOptions = validOptions;
 		}
