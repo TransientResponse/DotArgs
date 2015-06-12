@@ -27,7 +27,7 @@ namespace DotArgs
 		/// <param name="defaultValue">The default value.</param>
 		/// <param name="required">Flag indicating whether this argument is required.</param>
 		/// <param name="position">Position this argument is expected to be located in the command line.</param>
-		public Argument( object defaultValue, bool required = false, int? position = null )
+		protected Argument( object defaultValue, bool required = false, int? position = null )
 		{
 			DefaultValue = defaultValue;
 			IsRequired = required;
@@ -40,24 +40,10 @@ namespace DotArgs
 			}
 		}
 
-		/// <summary>Gets the value of this argument.</summary>
-		/// <returns>The argument's value.</returns>
-		public virtual object GetValue()
-		{
-			return Value;
-		}
-
 		/// <summary>Resets this argument.</summary>
 		public virtual void Reset()
 		{
 			Value = DefaultValue;
-		}
-
-		/// <summary>Sets the value for this argument.</summary>
-		/// <param name="value">The value to set.</param>
-		public virtual void SetValue( object value )
-		{
-			Value = value;
 		}
 
 		/// <summary>Validates the specified value.</summary>
@@ -97,13 +83,19 @@ namespace DotArgs
 		public Action<object> Processor { get; set; }
 
 		/// <summary>
-		/// Flag indicating whether multplie calls to <see cref="SetValue"/> will add a value or overwrite the existing one.
+		/// Flag indicating whether multplie writes to <see cref="Value"/> will add a value or overwrite the existing one.
 		/// </summary>
 		public bool SupportsMultipleValues { get; protected set; }
 
 		/// <summary>A method that can be used to validate a value for this argument.</summary>
 		public Func<object, bool> Validator { get; set; }
 
-		private object Value;
+		/// <summary>
+		/// Gets or sets the value for this argument.
+		/// </summary>
+		/// <value>
+		/// The value to set.
+		/// </value>
+		public virtual object Value { get; set; }
 	}
 }

@@ -29,14 +29,7 @@ namespace DotArgs
 		{
 			SupportsMultipleValues = true;
 			HelpPlaceholder = "COLLECTION";
-			base.SetValue( new string[0] );
-		}
-
-		/// <summary>Gets the value of this argument.</summary>
-		/// <returns>The argument's value.</returns>
-		public override object GetValue()
-		{
-			return Values.ToArray();
+			base.Value = new string[0];
 		}
 
 		/// <summary>Resets this argument.</summary>
@@ -45,11 +38,23 @@ namespace DotArgs
 			Values.Clear();
 		}
 
-		/// <summary>Sets the value for this argument.</summary>
-		/// <param name="value">The value to set.</param>
-		public override void SetValue( object value )
+		/// <summary>
+		/// Gets or sets the value for this argument.
+		/// </summary>
+		/// <value>
+		/// The value to set.
+		/// </value>
+		public override object Value
 		{
-			Values.Add( value as string );
+			get
+			{
+				return Values.ToArray();
+			}
+
+			set
+			{
+				Values.Add( value as string );
+			}
 		}
 
 		private List<string> Values = new List<string>();

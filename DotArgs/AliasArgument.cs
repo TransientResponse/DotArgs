@@ -23,23 +23,14 @@ namespace DotArgs
 		/// <summary>Initializes a new instance of the <see cref="AliasArgument"/> class.</summary>
 		/// <param name="entry">The argument this alias should mirror.</param>
 		public AliasArgument( Argument entry )
-			: base( entry.DefaultValue, entry.IsRequired )
+			: base( null )
 		{
+			entry.ThrowIfNull( nameof( entry ) );
+
+			DefaultValue = entry.DefaultValue;
+			base.IsRequired = entry.IsRequired;
+
 			Reference = entry;
-		}
-
-		/// <summary>Gets the value of this argument.</summary>
-		/// <returns>The argument's value.</returns>
-		public override object GetValue()
-		{
-			return Reference.GetValue();
-		}
-
-		/// <summary>Sets the value for this argument.</summary>
-		/// <param name="value">The value to set.</param>
-		public override void SetValue( object value )
-		{
-			Reference.SetValue( value );
 		}
 
 		/// <summary>Validates the specified value.</summary>
@@ -58,22 +49,59 @@ namespace DotArgs
 		/// <remarks>Using this when <see cref="IsRequired"/> is set will have no effect.</remarks>
 		public new object DefaultValue
 		{
-			get { return Reference.DefaultValue; }
-			protected internal set { Reference.DefaultValue = value; }
+			get
+			{
+				return Reference.DefaultValue;
+			}
+			protected internal set
+			{
+				Reference.DefaultValue = value;
+			}
 		}
 
 		/// <summary>
 		/// Flag indicating whether this argument is required, i.e. must be provided via the command line.
 		/// </summary>
-		public new bool IsRequired { get { return Reference.IsRequired; } }
+		public new bool IsRequired
+		{
+			get
+			{
+				return Reference.IsRequired;
+			}
+		}
 
 		/// <summary>Position this argument is expected to be located in the command line.</summary>
-		public new int? Position { get { return Reference.Position; } }
+		public new int? Position
+		{
+			get
+			{
+				return Reference.Position;
+			}
+		}
 
 		/// <summary>
-		/// Flag indicating whether multplie calls to <see cref="SetValue" /> will add a value or overwrite the existing one.
+		/// Flag indicating whether multplie writes to <see cref="Value" /> will add a value or overwrite the existing one.
 		/// </summary>
 		public new bool SupportsMultipleValues { get { return Reference.SupportsMultipleValues; } }
+
+		/// <summary>
+		/// Gets or sets the value for this argument.
+		/// </summary>
+		/// <value>
+		/// The value to set.
+		/// </value>
+		public override object Value
+		{
+			get
+			{
+				return Reference.Value;
+			}
+
+			set
+			{
+				Reference.Value = value;
+			}
+		}
 
 		private Argument Reference;
 	}

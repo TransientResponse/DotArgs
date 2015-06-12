@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle( "DotArgs" )]
@@ -13,3 +14,4 @@ using System.Runtime.InteropServices;
 [assembly: Guid( "482b6c0f-0059-415a-9b9f-ca30675a74fb" )]
 [assembly: AssemblyVersion( "1.0.0.0" )]
 [assembly: AssemblyFileVersion( "1.0.0.0" )]
+[assembly: CLSCompliant( true )]

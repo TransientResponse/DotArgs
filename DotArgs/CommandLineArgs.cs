@@ -16,6 +16,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -29,7 +30,7 @@ namespace DotArgs
 		public CommandLineArgs()
 		{
 			OutputWriter = Console.Out;
-			ExecuteableName = Path.GetFileNameWithoutExtension( Assembly.GetCallingAssembly().Location );
+			ExecutableName = Path.GetFileNameWithoutExtension( Assembly.GetCallingAssembly().Location );
 		}
 
 		/// <summary>Adds an example that will be displayed on the help page.</summary>
@@ -53,11 +54,11 @@ namespace DotArgs
 		{
 			if( !Arguments.ContainsKey( name ) )
 			{
-				throw new KeyNotFoundException( string.Format( "An collection with the name {0} was not registered.", name ) );
+				throw new KeyNotFoundException( string.Format( CultureInfo.CurrentCulture, "An collection with the name {0} was not registered.", name ) );
 			}
 
 			Argument entry = Arguments[name];
-			return (T)entry.GetValue();
+			return (T)entry.Value;
 		}
 
 		/// <summary>Prints a help message describing the effects of all available options.</summary>
@@ -74,7 +75,7 @@ namespace DotArgs
 				OutputWriter.WriteLine();
 			}
 			OutputWriter.WriteLine( "Usage:" );
-			OutputWriter.WriteLine( "{0} {1}", ExecuteableName, argList );
+			OutputWriter.WriteLine( "{0} {1}", ExecutableName, argList );
 
 			foreach( KeyValuePair<string, Argument> kvp in Arguments.OrderBy( k => k.Key ) )
 			{
@@ -106,7 +107,7 @@ namespace DotArgs
 			{
 				if( arg.Processor != null )
 				{
-					arg.Processor( arg.GetValue() );
+					arg.Processor( arg.Value );
 				}
 			}
 		}
@@ -121,7 +122,7 @@ namespace DotArgs
 		{
 			if( !Arguments.ContainsKey( originalName ) )
 			{
-				throw new KeyNotFoundException( string.Format( "An entry with the name {0} was not registered.", originalName ) );
+				throw new KeyNotFoundException( string.Format( CultureInfo.CurrentCulture, "An entry with the name {0} was not registered.", originalName ) );
 			}
 
 			AliasArgument entry = new AliasArgument( Arguments[originalName] );
@@ -157,7 +158,7 @@ namespace DotArgs
 		{
 			if( !Arguments.ContainsKey( argument ) )
 			{
-				throw new ArgumentException( string.Format( "Argument {0} was not registered", argument ), "argument" );
+				throw new ArgumentException( string.Format( CultureInfo.CurrentCulture, "Argument {0} was not registered", argument ), nameof( argument ) );
 			}
 
 			DefaultArgument = argument;
@@ -175,7 +176,7 @@ namespace DotArgs
 				value = GetValue<T>( name );
 				return true;
 			}
-			catch( Exception )
+			catch( KeyNotFoundException )
 			{
 				value = default(T);
 			}
@@ -234,14 +235,14 @@ namespace DotArgs
 					{
 						string argName = GetNameForArgument( posArgument );
 
-						parts[i] = string.Format( "/{0}={1}", argName, arg );
+						parts[i] = string.Format( CultureInfo.InvariantCulture, "/{0}={1}", argName, arg );
 						arg = argName;
 					}
 					else if( DefaultArgument != null )
 					{
 						if( !handledDefault || ignoreAlreadyHandled )
 						{
-							parts[i] = string.Format( "/{0}={1}", DefaultArgument, arg );
+							parts[i] = string.Format( CultureInfo.InvariantCulture, "/{0}={1}", DefaultArgument, arg );
 							arg = DefaultArgument;
 
 							handledDefault = true;
@@ -253,14 +254,14 @@ namespace DotArgs
 				{
 					if( DefaultArgument != null && ( !handledDefault || ignoreAlreadyHandled ) )
 					{
-						parts[i] = string.Format( "/{0}={1}", DefaultArgument, arg );
+						parts[i] = string.Format( CultureInfo.InvariantCulture, "/{0}={1}", DefaultArgument, arg );
 						arg = DefaultArgument;
 
 						handledDefault = true;
 					}
 					else
 					{
-						errorList.Add( string.Format( "Unknown option: '{0}'", arg ) );
+						errorList.Add( string.Format( CultureInfo.CurrentCulture, "Unknown option: '{0}'", arg ) );
 
 						errors = true;
 						continue;
@@ -290,35 +291,35 @@ namespace DotArgs
 
 					if( value != null )
 					{
-						entry.SetValue( value );
+						entry.Value = value;
 					}
 					else
 					{
 						// Missing argument
-						errorList.Add( string.Format( "Missing value for option '{0}'", arg ) );
+						errorList.Add( string.Format( CultureInfo.CurrentCulture, "Missing value for option '{0}'", arg ) );
 						errors = true;
 					}
 				}
 				else // Simple case: a flag
 				{
-					entry.SetValue( true );
+					entry.Value = true;
 				}
 			}
 
 			foreach( KeyValuePair<string, Argument> kvp in Arguments )
 			{
 				Argument entry = kvp.Value;
-				object value = entry.GetValue();
+				object value = entry.Value;
 
 				if( entry.IsRequired && value == null )
 				{
-					errorList.Add( string.Format( "Missing value for option '{0}'", kvp.Key ) );
+					errorList.Add( string.Format( CultureInfo.CurrentCulture, "Missing value for option '{0}'", kvp.Key ) );
 					errors = true;
 				}
 
 				if( !entry.Validate( value ) )
 				{
-					errorList.Add( string.Format( "{0}: Invalid value {1}", kvp.Key, value ) );
+					errorList.Add( string.Format( CultureInfo.CurrentCulture, "{0}: Invalid value {1}", kvp.Key, value ) );
 					errors = true;
 				}
 			}
@@ -331,30 +332,30 @@ namespace DotArgs
 			return !errors;
 		}
 
-		private string ArgumentToArgList( string name, Argument arg )
+		private static string ArgumentToArgList( string name, Argument arg )
 		{
-			string desc = string.Format( "/{0}", name );
+			string desc = string.Format( CultureInfo.InvariantCulture, "/{0}", name );
 			if( arg.NeedsValue )
 			{
-				desc += string.Format( "={0}", arg.HelpPlaceholder );
+				desc += string.Format( CultureInfo.InvariantCulture, "={0}", arg.HelpPlaceholder );
 			}
 
 			if( arg.IsRequired )
 			{
-				return string.Format( "<{0}>", desc );
+				return string.Format( CultureInfo.InvariantCulture, "<{0}>", desc );
 			}
 			else
 			{
 				if( arg.DefaultValue != null )
 				{
-					desc += string.Format( ", {0}", arg.DefaultValue );
+					desc += string.Format( CultureInfo.InvariantCulture, ", {0}", arg.DefaultValue );
 				}
 
-				return string.Format( "[{0}]", desc );
+				return string.Format( CultureInfo.InvariantCulture, "[{0}]", desc );
 			}
 		}
 
-		private string ExtractValueFromArg( string arg )
+		private static string ExtractValueFromArg( string arg )
 		{
 			char[] seperators = new[] { '=', ':' };
 
@@ -367,7 +368,7 @@ namespace DotArgs
 			return arg.Substring( idx + 1 );
 		}
 
-		private string GetArgName( string arg )
+		private static string GetArgName( string arg )
 		{
 			char[] seperators = new[] { '=', ':' };
 			char[] prefixes = new[] { '-', '/' };
@@ -401,12 +402,7 @@ namespace DotArgs
 			return arg.Substring( 0, end );
 		}
 
-		private Argument GetArgumentForPosition( int position )
-		{
-			return Arguments.Values.FirstOrDefault( a => a.Position.HasValue && a.Position.Value == position );
-		}
-
-		private string GetArgumentInfo( Argument arg )
+		private static string GetArgumentInfo( Argument arg )
 		{
 			string str = "";
 
@@ -420,33 +416,20 @@ namespace DotArgs
 
 				if( arg.DefaultValue != null )
 				{
-					str += string.Format( ", Default value: {0}", arg.DefaultValue );
+					str += string.Format( CultureInfo.CurrentCulture, ", Default value: {0}", arg.DefaultValue );
 				}
 			}
 
 			return str;
 		}
 
-		private string GetNameForArgument( Argument arg )
-		{
-			foreach( var kvp in Arguments )
-			{
-				if( kvp.Value == arg )
-				{
-					return kvp.Key;
-				}
-			}
-
-			return null;
-		}
-
-		private bool IsArgumentName( string arg )
+		private static bool IsArgumentName( string arg )
 		{
 			char[] prefixes = new[] { '-', '/' };
 
 			foreach( char p in prefixes )
 			{
-				if( arg.StartsWith( p.ToString() ) )
+				if( arg.StartsWith( p.ToString(), StringComparison.OrdinalIgnoreCase ) )
 				{
 					return true;
 				}
@@ -455,15 +438,7 @@ namespace DotArgs
 			return false;
 		}
 
-		private void Reset()
-		{
-			foreach( Argument entry in Arguments.Values )
-			{
-				entry.Reset();
-			}
-		}
-
-		private List<string> SplitCommandLine( string args )
+		private static List<string> SplitCommandLine( string args )
 		{
 			List<string> parts = new List<string>();
 
@@ -524,6 +499,32 @@ namespace DotArgs
 			return parts;
 		}
 
+		private Argument GetArgumentForPosition( int position )
+		{
+			return Arguments.Values.FirstOrDefault( a => a.Position.HasValue && a.Position.Value == position );
+		}
+
+		private string GetNameForArgument( Argument arg )
+		{
+			foreach( var kvp in Arguments )
+			{
+				if( kvp.Value == arg )
+				{
+					return kvp.Key;
+				}
+			}
+
+			return null;
+		}
+
+		private void Reset()
+		{
+			foreach( Argument entry in Arguments.Values )
+			{
+				entry.Reset();
+			}
+		}
+
 		/// <summary>Information about the application that will be displayed in the usage page.</summary>
 		/// <example>MyCoolProgram v1.2 Copyright (C) John Smith &lt;smith@example.com&gt;</example>
 		public string ApplicationInfo { get; set; }
@@ -533,7 +534,7 @@ namespace DotArgs
 		/// The default value for this is the name of the assembly containing the code that created
 		/// this object.
 		/// </remarks>
-		public string ExecuteableName { get; set; }
+		public string ExecutableName { get; set; }
 
 		/// <summary>
 		/// The TextWriter that is used to write the output. The default value is to use <see cref="Console.Out"/>

@@ -505,9 +505,9 @@ namespace DotArgsTests
 
 			string value = string.Empty;
 
-			Assert.IsTrue( args.TryGetValue<string>( "option", out value ) );
+			Assert.IsTrue( args.TryGetValue( "option", out value ) );
 			Assert.AreEqual( value, "123" );
-			Assert.IsFalse( args.TryGetValue<string>( "optionTest", out value ) );
+			Assert.IsFalse( args.TryGetValue( "optionTest", out value ) );
 		}
 
 		[TestMethod]
