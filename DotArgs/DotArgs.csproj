@@ -40,8 +40,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AliasArgument.cs" />
+    <Compile Include="Argument.cs" />
+    <Compile Include="CollectionArgument.cs" />
     <Compile Include="CommandLineArgs.cs" />
+    <Compile Include="FlagArgument.cs" />
+    <Compile Include="OptionalOut.cs" />
+    <Compile Include="OptionArgument.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SetArgument.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
