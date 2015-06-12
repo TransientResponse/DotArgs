@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using MSAssert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
 
 namespace DotArgsTests
