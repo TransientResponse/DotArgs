@@ -34,13 +34,9 @@ namespace DotArgsTests
 			if( ex == null )
 			{
 				MSAssert.Fail( "No exception was thrown although an exception was expected" );
-				return;
 			}
 
-			if( validationAction != null )
-			{
-				validationAction( ex );
-			}
+			validationAction?.Invoke( ex );
 		}
 	}
 }

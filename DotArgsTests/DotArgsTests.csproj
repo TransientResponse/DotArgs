@@ -51,8 +51,11 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="AliasArgumentTests.cs" />
     <Compile Include="CommandLineArgsTests.cs" />
+    <Compile Include="CommandLineHelperTests.cs" />
     <Compile Include="ExceptionAssert.cs" />
+    <Compile Include="FlagArgumentTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

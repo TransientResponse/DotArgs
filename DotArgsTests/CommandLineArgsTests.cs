@@ -7,15 +7,14 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DotArgsTests
 {
-	[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
-	[TestClass]
+	[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage, TestClass]
 	public class CommandLineArgsTest
 	{
 		[TestMethod]
 		public void AliasTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
-			args.RegisterArgument( "flag", new FlagArgument( false ) );
+			args.RegisterArgument( "flag", new FlagArgument() );
 			args.RegisterAlias( "flag", "alias" );
 
 			Assert.IsTrue( args.Validate( string.Empty ) );
@@ -40,11 +39,10 @@ namespace DotArgsTests
 			args.RegisterArgument( "option", new CollectionArgument() );
 
 			Assert.IsTrue( args.Validate( "/option=value1" ) );
-			string[] values = args.GetValue<string[]>( "option" );
 			CollectionAssert.AreEqual( new[] { "value1" }, args.GetValue<string[]>( "option" ) );
 
 			Assert.IsTrue( args.Validate( "/option=value1 /option=value2" ) );
-			values = args.GetValue<string[]>( "option" );
+			var values = args.GetValue<string[]>( "option" );
 			CollectionAssert.AreEqual( new[] { "value1", "value2" }, values );
 
 			Assert.IsTrue( args.Validate( "/option=value1 --option=value2" ) );
@@ -58,8 +56,7 @@ namespace DotArgsTests
 		public void CustomValidatorTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
-			OptionArgument option = new OptionArgument( "123", true );
-			option.Validator = ( v ) => v.Equals( "test" );
+			OptionArgument option = new OptionArgument( "123", true ) { Validator = v => v.Equals( "test" ) };
 			args.RegisterArgument( "option", option );
 
 			Assert.IsFalse( args.Validate( "/option=123" ) );
@@ -142,55 +139,6 @@ namespace DotArgsTests
 		}
 
 		[TestMethod]
-		public void GetArgNameTest()
-		{
-			CommandLineArgs args = new CommandLineArgs();
-			PrivateObject obj = new PrivateObject( args );
-
-			string name = (string)obj.Invoke( "GetArgName", "/arg" );
-			Assert.AreEqual( "arg", name );
-
-			name = (string)obj.Invoke( "GetArgName", "-arg" );
-			Assert.AreEqual( "arg", name );
-
-			name = (string)obj.Invoke( "GetArgName", "arg" );
-			Assert.AreEqual( "arg", name );
-
-			name = (string)obj.Invoke( "GetArgName", "--arg" );
-			Assert.AreEqual( "arg", name );
-
-			name = (string)obj.Invoke( "GetArgName", "/arg-" );
-			Assert.AreEqual( "arg-", name );
-
-			name = (string)obj.Invoke( "GetArgName", "/arg/" );
-			Assert.AreEqual( "arg/", name );
-
-			name = (string)obj.Invoke( "GetArgName", "/arg--" );
-			Assert.AreEqual( "arg--", name );
-
-			name = (string)obj.Invoke( "GetArgName", "//arg" );
-			Assert.AreEqual( "arg", name );
-
-			name = (string)obj.Invoke( "GetArgName", "//arg--" );
-			Assert.AreEqual( "arg--", name );
-
-			name = (string)obj.Invoke( "GetArgName", "/--/-/-//arg" );
-			Assert.AreEqual( "arg", name );
-
-			name = (string)obj.Invoke( "GetArgName", "/option=value" );
-			Assert.AreEqual( "option", name );
-
-			name = (string)obj.Invoke( "GetArgName", "/option:value" );
-			Assert.AreEqual( "option", name );
-
-			name = (string)obj.Invoke( "GetArgName", "--option=value" );
-			Assert.AreEqual( "option", name );
-
-			name = (string)obj.Invoke( "GetArgName", "--option:value" );
-			Assert.AreEqual( "option", name );
-		}
-
-		[TestMethod]
 		public void HelpArgumentTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
@@ -211,8 +159,10 @@ namespace DotArgsTests
 		[TestMethod]
 		public void HelpPageExampleTest()
 		{
-			CommandLineArgs args = new CommandLineArgs();
-			args.ApplicationInfo = "MyCoolProgram v1.2 Copyright (C) John Smith <smith@example.com>";
+			CommandLineArgs args = new CommandLineArgs
+			{
+				ApplicationInfo = "MyCoolProgram v1.2 Copyright (C) John Smith <smith@example.com>"
+			};
 			args.AddExample( "example 1", "/flag /option=1" );
 			args.AddExample( "great example", "/flag2" );
 			args.AddExample( "example 2", "/option=222" );
@@ -249,7 +199,7 @@ namespace DotArgsTests
 		public void OptionTest()
 		{
 			CommandLineArgs args = new CommandLineArgs();
-			args.RegisterArgument( "option", new OptionArgument( "123", false ) );
+			args.RegisterArgument( "option", new OptionArgument( "123" ) );
 
 			Assert.IsTrue( args.Validate( string.Empty ) );
 			Assert.AreEqual( "123", args.GetValue<string>( "option" ) );
@@ -292,9 +242,9 @@ namespace DotArgsTests
 		{
 			CommandLineArgs args = new CommandLineArgs();
 			args.RegisterArgument( "target_name", new OptionArgument( null, true ) );
-			args.RegisterArgument( "t", new FlagArgument( false, false ) );
-			args.RegisterArgument( "4", new FlagArgument( false, false ) );
-			args.RegisterArgument( "6", new FlagArgument( false, false ) );
+			args.RegisterArgument( "t", new FlagArgument() );
+			args.RegisterArgument( "4", new FlagArgument() );
+			args.RegisterArgument( "6", new FlagArgument() );
 			args.SetDefaultArgument( "target_name" );
 
 			Assert.IsTrue( args.Validate( "localhost" ) );
@@ -369,11 +319,13 @@ namespace DotArgsTests
 		[TestMethod]
 		public void PrintHelpTest()
 		{
-			CommandLineArgs args = new CommandLineArgs();
-			args.ApplicationInfo = "MyCoolProgram v1.2 Copyright (C) John Smith <smith@example.com>";
+			CommandLineArgs args = new CommandLineArgs
+			{
+				ApplicationInfo = "MyCoolProgram v1.2 Copyright (C) John Smith <smith@example.com>"
+			};
 
 			args.RegisterArgument( "flag", new FlagArgument( true, true ) { HelpMessage = "This is a flag." } );
-			args.RegisterArgument( "option", new OptionArgument( "123", false ) { HelpMessage = "This is an option." } );
+			args.RegisterArgument( "option", new OptionArgument( "123" ) { HelpMessage = "This is an option." } );
 
 			using( TextWriter writer = new StringWriter() )
 			{
@@ -438,11 +390,11 @@ namespace DotArgsTests
 			CommandLineArgs args = new CommandLineArgs();
 			args.RegisterArgument( "flag", new FlagArgument( true )
 			{
-				Processor = ( value ) => flagCalled = true
+				Processor = value => flagCalled = true
 			} );
 			args.RegisterArgument( "option", new OptionArgument( "test" )
 			{
-				Processor = ( value ) => optionCalled = true
+				Processor = value => optionCalled = true
 			} );
 
 			Assert.IsTrue( args.Validate( "/flag /option=value" ) );
@@ -472,38 +424,13 @@ namespace DotArgsTests
 		}
 
 		[TestMethod]
-		public void SplitCommandLineTest()
-		{
-			CommandLineArgs args = new CommandLineArgs();
-			PrivateObject obj = new PrivateObject( args );
-
-			List<string> parsed = (List<string>)obj.Invoke( "SplitCommandLine", "this is a test" );
-			CollectionAssert.AreEqual( new[] { "this", "is", "a", "test" }, parsed );
-
-			parsed = (List<string>)obj.Invoke( "SplitCommandLine", "this \"is a test\"" );
-			CollectionAssert.AreEqual( new[] { "this", "is a test" }, parsed );
-
-			parsed = (List<string>)obj.Invoke( "SplitCommandLine", "this 'is a test'" );
-			CollectionAssert.AreEqual( new[] { "this", "is a test" }, parsed );
-
-			parsed = (List<string>)obj.Invoke( "SplitCommandLine", "this \"is 'a' test\"" );
-			CollectionAssert.AreEqual( new[] { "this", "is 'a' test" }, parsed );
-
-			parsed = (List<string>)obj.Invoke( "SplitCommandLine", "this 'is \"a\" test'" );
-			CollectionAssert.AreEqual( new[] { "this", "is \"a\" test" }, parsed );
-
-			parsed = (List<string>)obj.Invoke( "SplitCommandLine", "this  is    a  test " );
-			CollectionAssert.AreEqual( new[] { "this", "is", "a", "test" }, parsed );
-		}
-
-		[TestMethod]
 		public void TryGetValueTest()
 		{
-			CommandLineArgs args = new CommandLineArgs();
+			var args = new CommandLineArgs();
 			args.RegisterArgument( "option", new OptionArgument( "" ) );
 			args.Validate( "option 123" );
 
-			string value = string.Empty;
+			string value;
 
 			Assert.IsTrue( args.TryGetValue( "option", out value ) );
 			Assert.AreEqual( value, "123" );

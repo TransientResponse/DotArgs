@@ -42,6 +42,6 @@ namespace DotArgs
 			return ValidOptions.Contains( value as string );
 		}
 
-		private string[] ValidOptions;
+		private readonly string[] ValidOptions;
 	}
 }

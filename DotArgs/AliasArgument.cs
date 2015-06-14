@@ -26,11 +26,16 @@ namespace DotArgs
 			: base( null )
 		{
 			entry.ThrowIfNull( nameof( entry ) );
+			Reference = entry;
 
 			DefaultValue = entry.DefaultValue;
 			base.IsRequired = entry.IsRequired;
+		}
 
-			Reference = entry;
+		/// <summary>Resets this argument.</summary>
+		public override void Reset()
+		{
+			Value = Reference.DefaultValue;
 		}
 
 		/// <summary>Validates the specified value.</summary>
@@ -49,40 +54,22 @@ namespace DotArgs
 		/// <remarks>Using this when <see cref="IsRequired"/> is set will have no effect.</remarks>
 		public new object DefaultValue
 		{
-			get
-			{
-				return Reference.DefaultValue;
-			}
-			protected internal set
-			{
-				Reference.DefaultValue = value;
-			}
+			get { return Reference.DefaultValue; }
+			protected internal set { Reference.DefaultValue = value; }
 		}
 
 		/// <summary>
 		/// Flag indicating whether this argument is required, i.e. must be provided via the command line.
 		/// </summary>
-		public new bool IsRequired
-		{
-			get
-			{
-				return Reference.IsRequired;
-			}
-		}
+		public new bool IsRequired => Reference.IsRequired;
 
 		/// <summary>Position this argument is expected to be located in the command line.</summary>
-		public new int? Position
-		{
-			get
-			{
-				return Reference.Position;
-			}
-		}
+		public new int? Position => Reference.Position;
 
 		/// <summary>
 		/// Flag indicating whether multplie writes to <see cref="Value" /> will add a value or overwrite the existing one.
 		/// </summary>
-		public new bool SupportsMultipleValues { get { return Reference.SupportsMultipleValues; } }
+		public new bool SupportsMultipleValues => Reference.SupportsMultipleValues;
 
 		/// <summary>
 		/// Gets or sets the value for this argument.
@@ -92,17 +79,11 @@ namespace DotArgs
 		/// </value>
 		public override object Value
 		{
-			get
-			{
-				return Reference.Value;
-			}
+			get { return Reference.Value; }
 
-			set
-			{
-				Reference.Value = value;
-			}
+			set { Reference.Value = value; }
 		}
 
-		private Argument Reference;
+		private readonly Argument Reference;
 	}
 }

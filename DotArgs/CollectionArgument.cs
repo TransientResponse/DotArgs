@@ -57,6 +57,6 @@ namespace DotArgs
 			}
 		}
 
-		private List<string> Values = new List<string>();
+		private readonly List<string> Values = new List<string>();
 	}
 }

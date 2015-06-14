@@ -44,14 +44,7 @@ namespace DotArgs
 		/// </returns>
 		protected internal override bool Validate( object value )
 		{
-			bool valid = value is bool;
-
-			if( IsRequired )
-			{
-				valid = valid && value != null;
-			}
-
-			return valid;
+			return !IsRequired || value is bool;
 		}
 	}
 }

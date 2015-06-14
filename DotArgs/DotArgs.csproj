@@ -48,6 +48,7 @@
     <Compile Include="Argument.cs" />
     <Compile Include="CollectionArgument.cs" />
     <Compile Include="CommandLineArgs.cs" />
+    <Compile Include="CommandLineHelper.cs" />
     <Compile Include="FlagArgument.cs" />
     <Compile Include="OptionalOut.cs" />
     <Compile Include="OptionArgument.cs" />
