@@ -23,13 +23,9 @@ namespace DotArgs
 		/// <summary>Initializes a new instance of the <see cref="AliasArgument"/> class.</summary>
 		/// <param name="entry">The argument this alias should mirror.</param>
 		public AliasArgument( Argument entry )
-			: base( null )
+			: base( entry.DefaultValue, entry.IsRequired, entry.Position )
 		{
-			entry.ThrowIfNull( nameof( entry ) );
 			Reference = entry;
-
-			DefaultValue = entry.DefaultValue;
-			base.IsRequired = entry.IsRequired;
 		}
 
 		/// <summary>Resets this argument.</summary>
