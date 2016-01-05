@@ -199,8 +199,12 @@ namespace DotArgs
 		/// </returns>
 		public bool Validate(string[] args, OptionalOut<string[]> outErrors = null)
 		{
-			return Validate(string.Join(" ", args), outErrors);
-		}
+            string[] new_args = new string[args.Length];
+            for (int i = 0; i < args.Length; i++)
+                new_args[i] = args[i].Replace("&", "&amp;").Replace(" ", "&sp;").Replace(":\\", "&col;\\");
+
+            return Validate(string.Join(" ", new_args), outErrors);
+        }
 
 		/// <summary>Processes a set of command line arguments.</summary>
 		/// <param name="args">
@@ -365,8 +369,8 @@ namespace DotArgs
 				return null;
 			}
 
-			return arg.Substring(idx + 1);
-		}
+            return arg.Substring(idx + 1).Replace("&col;", ":").Replace("&sp;", " ").Replace("&amp;", "&");
+        }
 		
 		private static string GetArgumentInfo(Argument arg)
 		{
