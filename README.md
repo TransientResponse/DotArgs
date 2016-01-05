@@ -1,3 +1,9 @@
+# About this fork
+
+This fork was created to fix issues related to passing file paths on the command line. The problem lies in arguments that contain spaces and/or colons in them, like `/input="C:\Users\Name\Documents\things and stuff.txt"`. The .NET Framework's built-in parsing of the command line means that the `args` string array gets the text `/input=C:\Users\Name\Documents\things and stuff.txt`, that is, the quotes disappear. The library then splits the string by spaces, and ends up thinking there are three arguments: `input=C:\Users\Name\Documents\things`, `and` and `stuff.txt`. Also, since colons (`:`) can be used as flag/value separators, it sees the first argument as having the name `input=C` and the value `\Users\Name\Documents\things`. Not exactly what the user intended. 
+
+Those issues are now fixed for the case of passing the `args` array directly to Validate. Fixing the single-string version of Validate will take more time. 
+
 # DotArgs
 
 Helper library for parsing, validating and processing command line arguments for .NET
